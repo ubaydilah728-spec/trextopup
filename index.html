@@ -1123,8 +1123,11 @@ function loadUserHome(){
   const name=session.nama||session.username||'USER';
   const rows=Array.isArray(d.idSummary)?d.idSummary:[];
 
-  document.getElementById('pageTitle').textContent='Beranda';
-  document.getElementById('pageSubtitle').textContent='Ringkasan akun dan seluruh transaksi Anda.';
+  const pageTitle=document.getElementById('pageTitle');
+  const pageSubtitle=document.getElementById('pageSubtitle');
+
+  if(pageTitle) pageTitle.textContent='Beranda';
+  if(pageSubtitle) pageSubtitle.textContent='Ringkasan akun dan seluruh transaksi Anda.';
 
   const body=rows.length
     ? rows.map(function(r){
