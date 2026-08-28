@@ -194,7 +194,8 @@ function buildNav(){
   let html='';
 
   if(isUser()){
-    html+=navButton('home','📊 Riwayat Saya');
+    html+=navButton('home','🏠 Beranda');
+    html+=navButton('mytransactions','📊 Transaksi Saya');
   }else{
     html+=navButton('transactions','📊 Transaksi');
     if(isAdmin()){
@@ -230,6 +231,7 @@ async function openPage(page){
   host.innerHTML='<div class="loading">Memuat data...</div>';
 
   if(page==='home')return loadUserHome();
+  if(page==='mytransactions')return loadMyTransactions();
   if(page==='transactions')return loadTransactions();
   if(page==='reseller')return loadReseller();
   if(page==='referral')return loadReferral();
@@ -238,31 +240,136 @@ async function openPage(page){
 }
 
 async function loadUserHome(){
-  document.getElementById('pageTitle').textContent='Riwayat Saya';
-  document.getElementById('pageSubtitle').textContent='Ringkasan akun dan seluruh transaksi Anda.';
+  document.getElementById('pageTitle').textContent='Beranda';
+  document.getElementById('pageSubtitle').textContent='';
 
   try{
-    const [summary,rows]=await Promise.all([
-      api('getUserDashboardData',[session.token]),
-      api('getUserTransactions',[session.token,{}])
-    ]);
+    const summary=await api('getUserDashboardData',[session.token]);
 
-    const cards='<div class="cards">'+
-      card('🪙','Total Koin Keluar',num(summary.totalCoinKeluar))+
-      card('📊','Total Transaksi',num(summary.totalTransaksi))+
-      card('🆔','Total ID',num(summary.totalId))+
+    const displayName=session.nama || session.username || 'USER';
+
+    const greeting=
+      '<div class="panel" style="margin-bottom:20px">'+
+        '<h2 style="margin:0;color:var(--gold2)">👋 Halo, '+esc(displayName)+'!</h2>'+
+        '<p style="margin:8px 0 0;color:var(--muted);font-size:16px">Selamat datang di TREX TOP UP</p>'+
       '</div>';
 
-    document.getElementById('page').innerHTML=
-      cards+transactionsTable(rows);
+    const cards='<div class="cards">'+
+      card('🆔','ID Terhubung',num(summary.totalId))+
+      card('📊','Transaksi',num(summary.totalTransaksi))+
+      card('🪙','Coin Keluar',num(summary.totalCoinKeluar))+
+      card('💰','Komisi','Rp '+num(summary.totalKomisi))+
+      '</div>';
+
+    const rows=Array.isArray(summary.idSummary)?summary.idSummary:[];
+    let table=
+      '<div class="panel"><h3>🆔 ID Saya</h3>'+
+      '<table><thead><tr>'+
+      '<th>ID</th><th>Jumlah Transaksi</th><th>Coin Keluar</th><th>Level</th><th>Komisi</th>'+
+      '</tr></thead><tbody>';
+
+    if(!rows.length){
+      table+='<tr><td colspan="5">Belum ada ID yang terhubung.</td></tr>';
+    }else{
+      rows.forEach(function(r){
+        table+='<tr>'+
+          '<td>'+esc(r.id)+'</td>'+
+          '<td>'+num(r.jumlahTransaksi)+'</td>'+
+          '<td>'+num(r.coinKeluar)+'</td>'+
+          '<td>'+esc(r.level||'-')+'</td>'+
+          '<td>Rp '+num(r.komisi)+'</td>'+
+        '</tr>';
+      });
+    }
+
+    table+='</tbody></table></div>';
+
+    document.getElementById('page').innerHTML=greeting+cards+table;
+
   }catch(err){
     document.getElementById('page').innerHTML=
-      '<div class="error">Gagal memuat riwayat: '+esc(err.message)+'</div>';
+      '<div class="error">Gagal memuat Beranda: '+esc(err.message)+'</div>';
   }
 }
 
 function card(icon,label,value){
   return '<div class="card"><div class="label">'+icon+' '+label+'</div><div class="value">'+value+'</div></div>';
+}
+
+async function loadMyTransactions(){
+  document.getElementById('pageTitle').textContent='Transaksi Saya';
+  document.getElementById('pageSubtitle').textContent='Rincian transaksi berdasarkan periode dan ID.';
+
+  document.getElementById('page').innerHTML=
+    '<div class="panel" style="margin-bottom:18px">'+
+      '<h3>Filter Transaksi</h3>'+
+      '<div class="filter-grid" style="display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:10px">'+
+        '<input id="filterStart" type="date">'+
+        '<input id="filterEnd" type="date">'+
+        '<select id="filterId" style="padding:14px;border-radius:10px;border:1px solid #555;font-size:15px"><option value="">Memuat ID...</option></select>'+
+      '</div>'+
+      '<button class="btn-gold" style="max-width:240px" onclick="applyMyTransactionFilter()">TAMPILKAN TRANSAKSI</button>'+
+    '</div>'+
+    '<div id="myTransactionResult" class="loading">Memuat data transaksi...</div>';
+
+  try{
+    const summary=await api('getUserDashboardData',[session.token]);
+    const select=document.getElementById('filterId');
+
+    select.innerHTML='<option value="">Semua ID</option>';
+    (summary.ids||[]).forEach(function(id){
+      select.innerHTML+='<option value="'+esc(id)+'">'+esc(id)+'</option>';
+    });
+
+    await applyMyTransactionFilter();
+  }catch(err){
+    document.getElementById('myTransactionResult').innerHTML=
+      '<div class="error">'+esc(err.message)+'</div>';
+  }
+}
+
+async function applyMyTransactionFilter(){
+  const result=document.getElementById('myTransactionResult');
+  if(!result)return;
+
+  result.innerHTML='<div class="loading">Memuat transaksi...</div>';
+
+  const filters={
+    startDate:document.getElementById('filterStart')?.value||'',
+    endDate:document.getElementById('filterEnd')?.value||'',
+    id:document.getElementById('filterId')?.value||''
+  };
+
+  try{
+    const rows=await api('getUserTransactions',[session.token,filters]);
+    result.innerHTML=myTransactionsTable(rows);
+  }catch(err){
+    result.innerHTML='<div class="error">'+esc(err.message)+'</div>';
+  }
+}
+
+function myTransactionsTable(rows){
+  rows=Array.isArray(rows)?rows:[];
+
+  let html=
+    '<div class="panel"><h3>Rincian Transaksi ('+rows.length+')</h3>'+
+    '<table><thead><tr>'+
+    '<th>Tanggal</th><th>ID</th><th>Jumlah Koin Keluar</th>'+
+    '</tr></thead><tbody>';
+
+  if(!rows.length){
+    html+='<tr><td colspan="3">Tidak ada transaksi pada periode/filter ini.</td></tr>';
+  }else{
+    rows.forEach(function(r){
+      html+='<tr>'+
+        '<td>'+esc(r.tanggal)+'</td>'+
+        '<td>'+esc(r.id)+'</td>'+
+        '<td>'+num(r.coinKeluar)+'</td>'+
+      '</tr>';
+    });
+  }
+
+  return html+'</tbody></table></div>';
 }
 
 async function loadTransactions(){
