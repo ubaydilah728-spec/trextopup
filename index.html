@@ -808,32 +808,156 @@ function doLogin(){
   const p=document.getElementById('loginPass').value;
   const er=document.getElementById('loginError');
   er.innerHTML='';
-  if(!u||!p){er.innerHTML='<div class="error">Username dan password wajib diisi.</div>';return}
+
+  if(!u||!p){
+    er.innerHTML='<div class="error">Username dan password wajib diisi.</div>';
+    return;
+  }
+
+  er.innerHTML='<div class="loading">Login & menyiapkan data akun...</div>';
+
   callServer('login',[u,p],res=>{
-    if(!res||!res.success){er.innerHTML='<div class="error">'+esc(res?.message||'Login gagal.')+'</div>';return}
-    session=res;
-    localStorage.setItem('TREX_TOKEN',res.token);
+    if(!res||!res.success){
+      er.innerHTML='<div class="error">'+esc(res?.message||'Login gagal.')+'</div>';
+      return;
+    }
+
+    session=Object.assign({},res,{token:res.token});
+    localStorage.setItem('TREX_SESSION',JSON.stringify(session));
+
+    // USER: ambil data transaksi SEBELUM Beranda dibuka.
+    if(String(session.role||'').toUpperCase()==='USER'){
+      callServer('getUserTransactions',[session.token,{}],rows=>{
+        session.userTransactions=Array.isArray(rows)?rows:[];
+        session.homeSummary=buildUserHomeSummary(session.userTransactions);
+        startApp();
+      },e=>{
+        // Login tetap berhasil; Beranda akan tampil kosong/0,
+        // bukan menggantung.
+        session.userTransactions=[];
+        session.homeSummary=buildUserHomeSummary([]);
+        startApp();
+      });
+      return;
+    }
+
     startApp();
-  },e=>er.innerHTML='<div class="error">'+esc(normalizeError(e))+'</div>');
+  },e=>{
+    er.innerHTML='<div class="error">'+esc(normalizeError(e))+'</div>';
+  });
 }
 function boot(){
-  const token=localStorage.getItem('TREX_TOKEN');
+  const tokenFromNew=localStorage.getItem('TREX_TOKEN');
+  const legacy=localStorage.getItem('TREX_SESSION');
+
+  let legacySession=null;
+  if(legacy){
+    try{legacySession=JSON.parse(legacy);}catch(e){}
+  }
+
+  const token=tokenFromNew||legacySession?.token;
   if(!token)return;
+
   callServer('validateSession',[token],res=>{
-    if(res&&res.valid){session={...res,token};startApp()}
-    else localStorage.removeItem('TREX_TOKEN');
-  },()=>localStorage.removeItem('TREX_TOKEN'));
+    if(!res||!res.valid){
+      localStorage.removeItem('TREX_TOKEN');
+      localStorage.removeItem('TREX_SESSION');
+      return;
+    }
+
+    session=Object.assign({},res,{token:token});
+
+    if(String(session.role||'').toUpperCase()==='USER'){
+      callServer('getUserTransactions',[token,{}],rows=>{
+        session.userTransactions=Array.isArray(rows)?rows:[];
+        session.homeSummary=buildUserHomeSummary(session.userTransactions);
+        localStorage.setItem('TREX_SESSION',JSON.stringify(session));
+        startApp();
+      },()=>{
+        session.userTransactions=[];
+        session.homeSummary=buildUserHomeSummary([]);
+        localStorage.setItem('TREX_SESSION',JSON.stringify(session));
+        startApp();
+      });
+    }else{
+      localStorage.setItem('TREX_SESSION',JSON.stringify(session));
+      startApp();
+    }
+  },()=>{
+    // Don't wipe a valid legacy session just because the endpoint had a
+    // temporary network error.
+    if(!legacySession?.token){
+      localStorage.removeItem('TREX_TOKEN');
+    }
+  });
 }
 function startApp(){
   const sidebar=document.querySelector('.sidebar');
-  if(sidebar) sidebar.classList.toggle('partner-layout', !isAdmin() && (isReseller() || isReferral()));
-  document.getElementById('loginPage').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-  document.getElementById('userName').textContent=session.nama||session.username;
-  document.getElementById('userRole').textContent=session.role||'USER';
+
+  if(sidebar){
+    sidebar.classList.toggle(
+      'partner-layout',
+      !isAdmin() && (isReseller() || isReferral())
+    );
+  }
+
+  const loginPage=document.getElementById('loginPage');
+  const app=document.getElementById('app');
+
+  if(loginPage) loginPage.classList.add('hidden');
+  if(app) app.classList.remove('hidden');
+
+  // Never let a missing optional sidebar node break login.
+  const nameEl=document.getElementById('userName');
+  const roleEl=document.getElementById('userRole');
+
+  if(nameEl){
+    nameEl.textContent=session?.nama||session?.username||'USER';
+  }
+
+  if(roleEl){
+    roleEl.textContent=session?.role||'USER';
+  }
+
+  // The live page may be an older cached DOM where these two nodes
+  // have different IDs. In that case, create the small user card
+  // inside the existing sidebar instead of failing the whole app.
+  if(sidebar && (!nameEl || !roleEl)){
+    let card=sidebar.querySelector('.userCard');
+
+    if(!card){
+      card=document.createElement('div');
+      card.className='userCard';
+
+      const menu=sidebar.querySelector('.menuLabel');
+      if(menu) sidebar.insertBefore(card,menu);
+      else sidebar.appendChild(card);
+    }
+
+    let n=card.querySelector('.userName');
+    let r=card.querySelector('.userRole');
+
+    if(!n){
+      n=document.createElement('div');
+      n.className='userName';
+      card.appendChild(n);
+    }
+
+    if(!r){
+      r=document.createElement('div');
+      r.className='userRole';
+      card.appendChild(r);
+    }
+
+    n.textContent=session?.nama||session?.username||'USER';
+    r.textContent=session?.role||'USER';
+  }
+
   buildNav();
   openPage(defaultPage());
 }
+
+
 function role(){return String(session?.role||'').toUpperCase()}
 function isUser(){return role()==='USER'}
 function isAdmin(){return role()==='SUPERADMIN'||role()==='ADMIN'||role().includes('ADMIN')}
@@ -956,29 +1080,58 @@ function renderDashboardFromTransactions(rows){
 
 
 /* ---------------- USER HOME ---------------- */
+function buildUserHomeSummary(rows){
+  rows=Array.isArray(rows)?rows:[];
+  const map=Object.create(null);
+  let totalCoin=0;
+  let totalKomisi=0;
+
+  rows.forEach(function(r){
+    const id=String(r.id||'').trim();
+    if(!id)return;
+
+    if(!map[id]){
+      map[id]={
+        id:id,
+        transaksi:0,
+        coin:0,
+        level:r.level||'-',
+        komisi:0
+      };
+    }
+
+    map[id].transaksi++;
+    map[id].coin+=Number(r.coinKeluar||0);
+    map[id].komisi+=Number(r.komisi||0);
+
+    totalCoin+=Number(r.coinKeluar||0);
+    totalKomisi+=Number(r.komisi||0);
+  });
+
+  return {
+    totalId:Object.keys(map).length,
+    totalTransaksi:rows.length,
+    totalCoinKeluar:totalCoin,
+    totalKomisi:totalKomisi,
+    idSummary:Object.keys(map).map(function(k){return map[k];})
+  };
+}
+
 function loadUserHome(){
   const p=document.getElementById('page');
+  const d=session.homeSummary||buildUserHomeSummary(session.userTransactions||[]);
+  const name=session.nama||session.username||'USER';
+  const rows=Array.isArray(d.idSummary)?d.idSummary:[];
 
   document.getElementById('pageTitle').textContent='Beranda';
   document.getElementById('pageSubtitle').textContent='Ringkasan akun dan seluruh transaksi Anda.';
-
-  const d=(session&&session.homeSummary)||{
-    totalId:0,
-    totalTransaksi:0,
-    totalCoinKeluar:0,
-    totalKomisi:0,
-    idSummary:[]
-  };
-
-  const name=(session&&session.nama)||((session&&session.username)||'USER');
-  const rows=Array.isArray(d.idSummary)?d.idSummary:[];
 
   const body=rows.length
     ? rows.map(function(r){
         return '<tr>'+
           '<td>'+esc(r.id)+'</td>'+
-          '<td class="num">'+fmtNumber(r.jumlahTransaksi||0)+'</td>'+
-          '<td class="num">'+fmtNumber(r.coinKeluar||0)+'</td>'+
+          '<td class="num">'+fmtNumber(r.transaksi||r.jumlahTransaksi||0)+'</td>'+
+          '<td class="num">'+fmtNumber(r.coin||r.coinKeluar||0)+'</td>'+
           '<td>'+esc(r.level||'-')+'</td>'+
           '<td class="num">'+fmtNumber(r.komisi||0)+'</td>'+
         '</tr>';
@@ -987,29 +1140,30 @@ function loadUserHome(){
 
   p.innerHTML=
     '<div class="partnerHome"><div class="partnerHomeInner">'+
-    '<div class="partnerBrand"><h1>TREX TOP UP</h1>'+
-      '<div class="welcome">Halo, <span>'+esc(name)+'</span> 👋</div>'+
-      '<div class="partnerRole">USER · Selamat datang di TREX TOP UP</div>'+
-    '</div>'+
-    '<div class="partnerSummary">'+
-      '<div class="partnerCard"><div class="label">ID Terhubung</div><div class="value">'+fmtNumber(d.totalId||0)+'</div><div class="sub">Total ID Anda</div></div>'+
-      '<div class="partnerCard"><div class="label">Transaksi</div><div class="value">'+fmtNumber(d.totalTransaksi||0)+'</div><div class="sub">Seluruh transaksi</div></div>'+
-      '<div class="partnerCard"><div class="label">Coin Keluar</div><div class="value">'+fmtNumber(d.totalCoinKeluar||0)+'</div><div class="sub">Akumulasi coin</div></div>'+
-    '</div>'+
-    '<div class="partnerSummary two">'+
-      '<div class="partnerCard"><div class="label">Komisi</div><div class="value">'+fmtNumber(d.totalKomisi||0)+'</div><div class="sub">Total komisi</div></div>'+
-      '<div class="partnerCard"><div class="label">No HP</div><div class="value" style="font-size:20px">'+esc(session.phone||session.username||'-')+'</div><div class="sub">Akun terdaftar</div></div>'+
-    '</div>'+
-    '<div class="panel"><h3 style="margin-top:0;color:var(--gold2)">🆔 ID Saya</h3>'+
-      '<div class="tableWrap"><table><thead><tr><th>ID</th><th>Transaksi</th><th>Coin Keluar</th><th>Level</th><th>Komisi</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
-    '</div>'+
-    '<div class="partnerActions">'+
-      '<button class="btn btnGold partnerAction" onclick="openPage(\'transactions\')">📊 Transaksi Saya</button>'+
-      '<button class="btn partnerAction" onclick="openPassword()">🔐 Ubah Password</button>'+
-      '<button class="btn partnerAction" onclick="doLogout()">↪ Logout</button>'+
-    '</div>'+
+      '<div class="partnerBrand"><h1>TREX TOP UP</h1>'+
+        '<div class="welcome">Halo, <span>'+esc(name)+'</span> 👋</div>'+
+        '<div class="partnerRole">USER · Selamat datang di TREX TOP UP</div>'+
+      '</div>'+
+      '<div class="partnerSummary">'+
+        '<div class="partnerCard"><div class="label">ID Terhubung</div><div class="value">'+fmtNumber(d.totalId||0)+'</div><div class="sub">Total ID Anda</div></div>'+
+        '<div class="partnerCard"><div class="label">Transaksi</div><div class="value">'+fmtNumber(d.totalTransaksi||0)+'</div><div class="sub">Seluruh transaksi</div></div>'+
+        '<div class="partnerCard"><div class="label">Coin Keluar</div><div class="value">'+fmtNumber(d.totalCoinKeluar||0)+'</div><div class="sub">Akumulasi coin</div></div>'+
+      '</div>'+
+      '<div class="partnerSummary two">'+
+        '<div class="partnerCard"><div class="label">Komisi</div><div class="value">'+fmtNumber(d.totalKomisi||0)+'</div><div class="sub">Total komisi</div></div>'+
+        '<div class="partnerCard"><div class="label">No HP</div><div class="value" style="font-size:20px">'+esc(session.phone||session.username||'-')+'</div><div class="sub">Akun terdaftar</div></div>'+
+      '</div>'+
+      '<div class="panel"><h3 style="margin-top:0;color:var(--gold2)">🆔 ID Saya</h3>'+
+        '<div class="tableWrap"><table><thead><tr><th>ID</th><th>Transaksi</th><th>Coin Keluar</th><th>Level</th><th>Komisi</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
+      '</div>'+
+      '<div class="partnerActions">'+
+        '<button class="btn btnGold partnerAction" onclick="openPage(\'transactions\')">📊 Transaksi Saya</button>'+
+        '<button class="btn partnerAction" onclick="openPassword()">🔐 Ubah Password</button>'+
+        '<button class="btn partnerAction" onclick="doLogout()">↪ Logout</button>'+
+      '</div>'+
     '</div></div>';
 }
+
 
 
 /* ---------------- PARTNER HOME ---------------- */
