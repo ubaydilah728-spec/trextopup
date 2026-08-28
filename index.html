@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TREX TOP UP • PRO</title>
+<title>TREX TOP UP • Login Portal</title>
 <style>
 /* ===== TREX TOP UP PRO THEME — visual only, backend untouched ===== */
 :root{
@@ -28,7 +28,6 @@
 html{scroll-behavior:smooth}
 body{
   margin:0;
-  overflow-x:hidden;
   min-height:100vh;
   background:
     radial-gradient(circle at 85% 0%,rgba(245,197,66,.07),transparent 28%),
@@ -218,12 +217,6 @@ button{cursor:pointer}
   box-shadow:0 6px 18px rgba(245,197,66,.13);
 }
 .logout{margin-top:auto;padding:10px 9px 16px}
-@media(max-width:680px){
-  .sidebar.partner-layout .logout{
-    margin-top:18px;
-    padding:8px 9px 20px;
-  }
-}
 .logout button{
   width:100%;
   color:#f0caca;
@@ -371,7 +364,7 @@ th{
   z-index:2;
   background:linear-gradient(180deg,#1a1608,#120f05);
   color:#ffd85a;
-  text-align:center;
+  text-align:left;
   font-size:12px;
   font-weight:900;
   padding:12px 11px;
@@ -380,7 +373,6 @@ th{
 }
 td{
   padding:11px 11px;
-  text-align:center;
   border-bottom:1px solid #202020;
   font-size:13px;
   color:#e7e7e7;
@@ -388,7 +380,7 @@ td{
 }
 tbody tr:nth-child(even){background:rgba(255,255,255,.012)}
 tbody tr:hover{background:rgba(245,197,66,.055)}
-td.num{text-align:center}
+td.num{text-align:right}
 .empty,.loading{
   text-align:center;
   color:#89919a;
@@ -425,242 +417,31 @@ td.num{text-align:center}
 }
 .modalBox h2{margin-top:0;color:var(--gold)}
 
-
-
-/* ===== PARTNER HOME (RESELLER / REFERRAL) ===== */
-.partnerHome{
-  min-height:calc(100vh - 52px);
-  display:flex;
-  align-items:flex-start;
-  justify-content:center;
-  padding:18px 0 40px;
-}
-.partnerHomeInner{
-  width:min(900px,100%);
-  margin:0 auto;
-}
-.partnerBrand{
-  text-align:center;
-  margin:8px 0 28px;
-}
-.partnerBrand h1{
-  font-size:32px;
-  letter-spacing:1px;
-  margin:0;
-}
-.partnerBrand .welcome{
-  color:#fff;
-  font-size:20px;
-  font-weight:800;
-  margin-top:10px;
-}
-.partnerBrand .welcome span{color:var(--gold-bright)}
-.partnerBrand .partnerRole{
-  color:#8f969d;
-  font-size:13px;
-  margin-top:6px;
-}
-.partnerSummary{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:14px;
-  margin-bottom:22px;
-}
-.partnerSummary.two{grid-template-columns:repeat(2,1fr)}
-.partnerCard{
-  min-height:145px;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  text-align:center;
-  padding:20px 16px;
-  border:1px solid var(--line);
-  border-radius:15px;
-  background:
-    radial-gradient(circle at 100% 0,rgba(245,197,66,.12),transparent 42%),
-    linear-gradient(145deg,#151515,#0a0a0a);
-  box-shadow:0 14px 32px rgba(0,0,0,.34);
-}
-.partnerCard .label{
-  color:#a9afb5;
-  font-size:12px;
-  font-weight:800;
-  letter-spacing:1px;
-  text-transform:uppercase;
-}
-.partnerCard .value{
-  color:var(--gold-bright);
-  font-size:28px;
-  line-height:1.15;
-  font-weight:950;
-  margin-top:10px;
-  word-break:break-word;
-}
-.partnerCard .sub{
-  color:#777e85;
-  font-size:11px;
-  margin-top:6px;
-}
-.partnerActions{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:10px;
-}
-.partnerAction{
-  min-height:54px;
-  font-weight:900;
-  font-size:14px;
-}
-.partnerLoading{
-  text-align:center;
-  color:#858b91;
-  padding:60px 20px;
-}
-@media(max-width:760px){
-  .partnerHome{padding:8px 0 28px}
-  .partnerBrand{margin-bottom:20px}
-  .partnerBrand h1{font-size:28px}
-  .partnerBrand .welcome{font-size:18px}
-  .partnerSummary{grid-template-columns:1fr;gap:10px}
-  .partnerSummary.two{grid-template-columns:1fr 1fr}
-  .partnerCard{min-height:122px;padding:16px 12px}
-  .partnerCard .value{font-size:24px}
-  .partnerActions{grid-template-columns:1fr 1fr}
-}
-@media(max-width:430px){
-  .partnerSummary.two{grid-template-columns:1fr}
-  .partnerActions{grid-template-columns:1fr}
-  .partnerCard .value{font-size:25px}
-}
-
-
-/* ===== PARTNER PRO PHASE 1 ===== */
-.partnerProGrid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:14px;
-  margin:0 0 18px;
-}
-.partnerProCard{
-  position:relative;
-  min-height:118px;
-  padding:18px 18px 16px;
-  border:1px solid var(--line);
-  border-radius:15px;
-  background:
-    radial-gradient(circle at 100% 0,rgba(245,197,66,.12),transparent 42%),
-    linear-gradient(145deg,#151515,#0a0a0a);
-  box-shadow:0 14px 32px rgba(0,0,0,.30);
-  overflow:hidden;
-}
-.partnerProCard:after{
-  content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.7;
-}
-.partnerProCard .proLabel{color:#8f969d;font-size:10px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase}
-.partnerProCard .proValue{color:var(--gold-bright);font-size:25px;font-weight:950;line-height:1.15;margin-top:8px;word-break:break-word}
-.partnerProCard .proSub{color:#6f767d;font-size:11px;margin-top:6px}
-.partnerPerf{
-  border:1px solid var(--line);border-radius:15px;padding:18px;
-  background:linear-gradient(145deg,#111,#090909);
-  box-shadow:0 14px 32px rgba(0,0,0,.28);margin-bottom:18px;
-}
-.partnerPerfHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
-.partnerPerfTitle{font-size:15px;font-weight:900;color:#fff}
-.partnerPerfSub{font-size:11px;color:#777e85;margin-top:4px}
-.partnerPerfStats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
-.partnerPerfStat{padding:11px 12px;border-radius:10px;background:#0a0a0a;border:1px solid #252525}
-.partnerPerfStat .sLabel{font-size:10px;color:#737980;text-transform:uppercase;letter-spacing:.8px;font-weight:800}
-.partnerPerfStat .sValue{font-size:18px;color:#eee;font-weight:900;margin-top:4px}
-.partnerChart{height:145px;display:flex;align-items:flex-end;gap:7px;padding:8px 4px 0;border-top:1px solid #222}
-.chartCol{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:0}
-.chartBar{width:100%;max-width:34px;min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#ffd966,#a87308);box-shadow:0 4px 12px rgba(245,197,66,.12)}
-.chartValue{font-size:8px;color:#d9b54a;min-height:12px;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis}
-.chartLabel{font-size:9px;color:#686e74;margin-top:6px;white-space:nowrap}
-.partnerNextLevel{margin-top:13px;padding:11px 12px;border-radius:10px;background:rgba(245,197,66,.045);border:1px solid rgba(245,197,66,.12);color:#aaa;font-size:11px}
-.partnerNextLevel strong{color:var(--gold-bright)}
-.partnerChartEmpty{width:100%;text-align:center;color:#686e74;font-size:11px;padding-top:58px}
-@media(max-width:760px){
- .partnerProGrid{grid-template-columns:1fr 1fr;gap:10px}
- .partnerProCard{min-height:105px;padding:15px 14px}
- .partnerProCard .proValue{font-size:21px}
- .partnerPerf{padding:14px}
- .partnerPerfStats{grid-template-columns:1fr 1fr}
- .partnerPerfStats .partnerPerfStat:last-child{grid-column:1/-1}
- .partnerChart{gap:5px;height:125px}
-}
-@media(max-width:430px){
- .partnerProGrid{grid-template-columns:1fr}
- .partnerPerfStats{grid-template-columns:1fr 1fr}
- .partnerPerfStat .sValue{font-size:16px}
- .chartLabel{font-size:8px}
-}
-
-/* MOBILE NAVIGATION */
-.mobileMenuBtn,.mobileOverlay{display:none}
-@media(max-width:680px){
-  #app{display:block;min-height:100vh}
-  .mobileMenuBtn{
-    display:flex;align-items:center;justify-content:center;
-    position:fixed;top:12px;left:12px;z-index:31;
-    width:46px;height:46px;border-radius:12px;
-    border:1px solid #8d650b;
-    background:linear-gradient(135deg,#ffd95a,#d59b16);
-    color:#090909;font-size:23px;font-weight:900;
-    box-shadow:0 8px 22px rgba(0,0,0,.45);
-  }
-  .mobileOverlay{
-    position:fixed;inset:0;z-index:28;
-    background:rgba(0,0,0,.68);backdrop-filter:blur(2px);
-  }
-  .sidebar{
-    position:fixed;left:0;top:0;bottom:0;
-    width:min(285px,86vw);height:100vh;min-height:100vh;
-    border-right:1px solid var(--line);border-bottom:0;
-    transform:translateX(-105%);transition:transform .22s ease;
-    overflow-y:auto;z-index:30;
-  }
-  .sidebar.mobileOpen{transform:translateX(0)}
-  .sidebar.mobileOpen + .main{pointer-events:none}
-  .mobileOverlay.show{display:block}
-  .main{margin-left:0;width:100%;padding:72px 12px 18px}
-  .logoSide{width:132px;height:132px;margin:14px auto 10px}
-  .userCard{padding:13px 14px}
-  .nav{padding:8px 9px}
-  .nav button{min-height:48px;font-size:15px}
-  .logout{margin-top:auto;padding:10px 9px 16px}
-  .topbar{align-items:flex-start;gap:12px}
-  .topbar .btn{width:auto;min-width:110px;align-self:flex-start}
-  h1{font-size:24px;line-height:1.1}
-  .subtitle{font-size:12px;line-height:1.4}
-  .panel{padding:10px;border-radius:12px}
-  .filters{grid-template-columns:1fr;gap:9px}
-  .filters input{min-height:44px}
-  .actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-  .actions .btn{width:100%;min-height:44px}
-  .tableWrap{width:100%;max-height:62vh;overflow:auto;-webkit-overflow-scrolling:touch}
-  table{min-width:760px}
-  th,td{padding:10px 9px;font-size:12px;white-space:nowrap}
-  .summaryCards{grid-template-columns:1fr 1fr;gap:8px}
-  .summaryCard{padding:12px}
-  .summaryCard .value{font-size:21px}
-  .modal{padding:12px}
-  .modalBox{width:100%;padding:18px}
-}
-@media(max-width:390px){
-  .main{padding-left:9px;padding-right:9px}
-  .summaryCards{grid-template-columns:1fr}
-  .actions{grid-template-columns:1fr 1fr}
-  .topbar .btn{min-width:96px;padding:9px 11px}
-}
-
 /* RESPONSIVE */
-@media (min-width:681px) and (max-width:950px){
+@media(max-width:950px){
   .sidebar{width:220px}
   .main{margin-left:220px;width:calc(100% - 220px);padding:18px}
   .filters{grid-template-columns:1fr 1fr}
   .logoSide{width:145px;height:145px}
+}
+@media(max-width:680px){
+  .sidebar{
+    position:relative;
+    width:100%;
+    min-height:auto;
+    border-right:0;
+    border-bottom:1px solid var(--line);
+  }
+  #app{display:block}
+  .main{margin-left:0;width:100%;padding:14px}
+  .filters{grid-template-columns:1fr}
+  .logoSide{width:120px;height:120px}
+  .logout{margin-top:4px}
+  .topbar{align-items:stretch;flex-direction:column}
+  .topbar .btn{width:100%}
+  h1{font-size:25px}
+  .panel{padding:12px}
+  .tableWrap{max-height:65vh}
 }
 @media(prefers-reduced-motion:reduce){
   *{scroll-behavior:auto!important;transition:none!important}
@@ -683,8 +464,8 @@ td.num{text-align:center}
 <div id="loginPage">
   <div class="loginBox">
     <img id="loginLogo" class="logoLogin" alt="TREX TOP UP">
-    <div class="loginTitle">LOGIN TREX</div>
-    <input id="loginUser" class="field" placeholder="Username" autocomplete="username">
+    <div class="loginTitle">LOGIN TREX TOP UP</div>
+    <input id="loginUser" class="field" placeholder="Username / Nomor HP" autocomplete="username">
     <input id="loginPass" class="field" type="password" placeholder="Password" autocomplete="current-password">
     <button class="btn btnGold loginBtn" onclick="doLogin()">LOGIN</button>
     <div id="loginError"></div>
@@ -692,8 +473,6 @@ td.num{text-align:center}
 </div>
 
 <div id="app" class="hidden">
-  <button id="mobileMenuBtn" class="mobileMenuBtn" type="button" onclick="toggleMobileMenu()" aria-label="Buka menu">☰</button>
-  <div id="mobileOverlay" class="mobileOverlay" onclick="closeMobileMenu()"></div>
   <aside class="sidebar">
     <img id="sideLogo" class="logoSide" alt="TREX TOP UP">
     <div class="userCard">
@@ -748,12 +527,11 @@ let cache={};
 function esc(v){
   return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
-const GAS_WEB_APP_URL='https://script.google.com/macros/s/AKfycbzTxkZm-Bu2As0Pzu-7pAMIcJ26CR5TJyNHf42mcCkIPimyeJhCQxUguiMdzPE8qjvZ/exec';
 async function callServer(fn,args,ok,fail){
   try{
-    const response=await fetch(GAS_WEB_APP_URL,{
+    const response=await fetch('/.netlify/functions/api',{
       method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:fn,args:Array.isArray(args)?args:[]})
     });
     const raw=await response.text();
@@ -778,7 +556,7 @@ function doLogin(){
   const p=document.getElementById('loginPass').value;
   const er=document.getElementById('loginError');
   er.innerHTML='';
-  if(!u||!p){er.innerHTML='<div class="error">Username dan password wajib diisi.</div>';return}
+  if(!u||!p){er.innerHTML='<div class="error">Username / Nomor HP dan password wajib diisi.</div>';return}
   callServer('login',[u,p],res=>{
     if(!res||!res.success){er.innerHTML='<div class="error">'+esc(res?.message||'Login gagal.')+'</div>';return}
     session=res;
@@ -795,37 +573,28 @@ function boot(){
   },()=>localStorage.removeItem('TREX_TOKEN'));
 }
 function startApp(){
-  const sidebar=document.querySelector('.sidebar');
-  if(sidebar) sidebar.classList.toggle('partner-layout', !isAdmin() && (isReseller() || isReferral()));
   document.getElementById('loginPage').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('userName').textContent=session.nama||session.username;
   document.getElementById('userRole').textContent=session.role||'USER';
   buildNav();
   openPage(defaultPage());
+  if(isAdmin()||isUser()) loadDashboard();
 }
 function role(){return String(session?.role||'').toUpperCase()}
 function isAdmin(){return role()==='SUPERADMIN'||role()==='ADMIN'||role().includes('ADMIN')}
 function isReseller(){return role().includes('RESELLER')}
 function isReferral(){return role().includes('REFERRAL')}
+function isUser(){return role()==='USER'}
 
 function buildNav(){
   const n=document.getElementById('nav');
   let html='';
-  if(isAdmin()){
-    html+=navBtn('transactions','📊','Transaksi');
-    html+=navBtn('reseller','👥','Reseller');
-    html+=navBtn('referral','🔗','Referral');
-    html+=navBtn('note2','☎️','Note 2');
-  }else if(isReseller()){
-    html+=navBtn('home','🏠','Beranda');
-    html+=navBtn('transactions','📊','Transaksi Saya');
-    html+=navBtn('reseller','👥','Komisi Reseller');
-  }else if(isReferral()){
-    html+=navBtn('home','🏠','Beranda');
-    html+=navBtn('transactions','📊','Transaksi Saya');
-    html+=navBtn('referral','🔗','Komisi Referral');
-  }
+  if(isAdmin()||isUser()) html+=navBtn('transactions','📊',isUser()?'Riwayat Saya':'Transaksi');
+  if(isAdmin()) html+=navBtn('reseller','👥','Reseller');
+  if(isAdmin()||isReferral()) html+=navBtn('referral','🔗','Referral');
+  if(isAdmin()) html+=navBtn('note2','☎️','Note 2');
+  if(!isAdmin()&&(isReseller()||isReferral())) html+=navBtn(isReseller()?'reseller':'referral',isReseller()?'👥':'🔗',isReseller()?'Komisi Reseller':'Komisi Referral');
   html+=navBtn('password','🔐','Ubah Password');
   n.innerHTML=html;
 }
@@ -833,38 +602,23 @@ function navBtn(page,icon,text){
  return '<button data-page="'+page+'" onclick="openPage(\''+page+'\')">'+icon+' &nbsp; '+text+'</button>';
 }
 function defaultPage(){
- if(isReseller()||isReferral())return 'home';
+ if(isReseller())return 'reseller';
+ if(isReferral())return 'referral';
+ if(isUser())return 'transactions';
  return 'transactions';
 }
 function activate(page){
  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
 }
 
-function toggleMobileMenu(){
-  const sidebar=document.querySelector('.sidebar');
-  const overlay=document.getElementById('mobileOverlay');
-  if(!sidebar)return;
-  const open=sidebar.classList.toggle('mobileOpen');
-  if(overlay)overlay.classList.toggle('show',open);
-}
-function closeMobileMenu(){
-  document.querySelector('.sidebar')?.classList.remove('mobileOpen');
-  document.getElementById('mobileOverlay')?.classList.remove('show');
-}
 function openPage(page){
- closeMobileMenu();
  currentPage=page;activate(page);
  const dashboardHost=document.getElementById('dashboardHost');
- if(dashboardHost) {
-  // Ringkasan 5 kartu hanya untuk SUPERADMIN/ADMIN.
-  // Reseller/Referral tidak menampilkan ringkasan global yang tidak diperlukan.
-  dashboardHost.classList.toggle('show',isAdmin() && page==='transactions');
-}
+ if(dashboardHost) dashboardHost.classList.toggle('show',page==='transactions');
  if(page==='password'){openPassword();return}
  const p=document.getElementById('page');
  p.innerHTML='<div class="loading">Memuat data...</div>';
- if(page==='home')loadPartnerHome();
- else if(page==='transactions')loadTransactions();
+ if(page==='transactions')loadTransactions();
  else if(page==='reseller')loadReseller();
  else if(page==='referral')loadReferral();
  else if(page==='note2')loadNote2();
@@ -883,252 +637,129 @@ function dashboardCard(icon,label,value){
     <div class="summaryValue">${fmtNumber(value)}</div>
   </div>`;
 }
-function renderDashboardFromTransactions(rows){
+function loadDashboard(){
   const box=document.getElementById('dashboardCards');
-  if(!box)return;
-  const resellerSet=new Set(), referralSet=new Set(), userSet=new Set();
-  let totalCoin=0;
-  (rows||[]).forEach(r=>{
-    totalCoin += Number(r?.coinKeluar)||0;
-    const res=String(r?.reseller||'').trim();
-    const ref=String(r?.referral||'').trim();
-    const hp=String(r?.note2||'').replace(/\D/g,'');
-    if(res)resellerSet.add(res.toUpperCase());
-    if(ref)referralSet.add(ref.toUpperCase());
-    if(hp.length>=8)userSet.add(hp);
-  });
-  box.innerHTML=
-    dashboardCard('🪙','Total Koin Keluar',totalCoin)+
-    dashboardCard('👤','Total User',userSet.size)+
-    dashboardCard('📊','Total Transaksi',(rows||[]).length)+
-    dashboardCard('👥','Total Reseller',resellerSet.size)+
-    dashboardCard('🔗','Total Referral',referralSet.size);
-}
+  if(!box || !session?.token)return;
 
-/* ---------------- PARTNER HOME ---------------- */
-function loadPartnerHome(){
-  if(isAdmin()){openPage('transactions');return}
-  const p=document.getElementById('page');
-  const roleLabel=isReseller()?'RESELLER':'REFERRAL';
-  p.innerHTML='<div class="partnerHome"><div class="partnerHomeInner"><div class="partnerLoading">Memuat akun...</div></div></div>';
-
-  const fn=isReseller()?'getResellerData':'getReferralData';
-  // Ringkasan utama dirender segera setelah data akun tersedia.
-  callServer(fn,[{},session.token],data=>{
-    const rows=Array.isArray(data)?data:(data?.data||[]);
-    let item=null;
-    if(isReseller()){
-      item=rows.find(r=>String(r?.reseller||'').toUpperCase()===String(session.username||'').toUpperCase()) || rows[0];
-    }else{
-      item=rows.find(r=>String(r?.referral||'').toUpperCase()===String(session.username||'').toUpperCase()) || rows[0];
-    }
-    renderPartnerHome(item,roleLabel);
-    // Grafik/performa dimuat terpisah agar kartu utama tidak menunggu transaksi.
-    loadPartnerPerformance();
-  },e=>{
-    p.innerHTML='<div class="partnerHome"><div class="partnerHomeInner"><div class="alert err">Gagal memuat akun: '+esc(normalizeError(e))+'</div></div></div>';
-  });
-}
-function renderPartnerHome(item,roleLabel){
-  item=item||{};
-  const name=session.nama||session.username||'';
-  const username=session.username||'';
-  const reseller=isReseller();
-  const coin=fmtNumber(item.coinKeluar||0);
-  const commission=fmtNumber(item.commission||0);
-  const level=reseller?(item.level||'-'):'';
-  const cards=reseller
-    ? '<div class="partnerSummary">'+
-      '<div class="partnerCard"><div class="label">Coin Keluar</div><div class="value">'+coin+'</div><div class="sub">Akumulasi transaksi saya</div></div>'+
-      '<div class="partnerCard"><div class="label">Level</div><div class="value">'+esc(level)+'</div><div class="sub">Level reseller saat ini</div></div>'+
-      '<div class="partnerCard"><div class="label">Komisi</div><div class="value">'+commission+'</div><div class="sub">Komisi reseller</div></div>'+
-      '</div>'
-    : '<div class="partnerSummary two">'+
-      '<div class="partnerCard"><div class="label">Coin Keluar</div><div class="value">'+coin+'</div><div class="sub">Akumulasi transaksi saya</div></div>'+
-      '<div class="partnerCard"><div class="label">Komisi</div><div class="value">'+commission+'</div><div class="sub">Komisi referral</div></div>'+ 
-      '</div>';
-
-  const actions=reseller
-    ? '<div class="partnerActions">'+
-      '<button class="btn btnGold partnerAction" onclick="openPage(\'transactions\')">📊 Transaksi Saya</button>'+
-      '<button class="btn partnerAction" onclick="openPage(\'reseller\')">👥 Komisi Saya</button>'+
-      '<button class="btn partnerAction" onclick="openPassword()">🔐 Ubah Password</button>'+
-      '<button class="btn partnerAction" onclick="doLogout()">↪ Logout</button>'+
-      '</div>'
-    : '<div class="partnerActions">'+
-      '<button class="btn btnGold partnerAction" onclick="openPage(\'transactions\')">📊 Transaksi Saya</button>'+
-      '<button class="btn partnerAction" onclick="openPage(\'referral\')">🔗 Komisi Saya</button>'+
-      '<button class="btn partnerAction" onclick="openPassword()">🔐 Ubah Password</button>'+
-      '<button class="btn partnerAction" onclick="doLogout()">↪ Logout</button>'+
-      '</div>';
-
-  document.getElementById('page').innerHTML=
-    '<div class="partnerHome"><div class="partnerHomeInner">'+
-    '<div class="partnerBrand"><h1>TREX TOP UP</h1><div class="welcome">Halo, <span>'+esc(username)+'</span></div><div class="partnerRole">'+roleLabel+' · '+esc(name)+'</div></div>'+
-    cards+
-    '<div id="partnerPerformance"></div>'+
-    actions+
-    '</div></div>';
-}
-function loadPartnerPerformance(){
-  const host=document.getElementById('partnerPerformance');
-  if(!host)return;
-  host.innerHTML='<div class="partnerPerf"><div class="partnerPerfTitle">Performa Anda</div><div class="partnerPerfSub">Menyiapkan statistik transaksi...</div></div>';
-  callServer('getTransactions',[{},session.token,true],rows=>{
-    renderPartnerPerformance(rows||[]);
-  },e=>{
-    const h=document.getElementById('partnerPerformance');
-    if(h)h.innerHTML='';
-  });
-}
-function parsePartnerDate(value){
-  if(!value)return null;
-  if(Object.prototype.toString.call(value)==='[object Date]' && !isNaN(value.getTime()))return value;
-  const s=String(value).trim();
-  // Google Apps Script mengirim tanggal sebagai dd/MM/yyyy HH:mm:ss.
-  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
-  if(m){
-    const d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]),Number(m[4]||0),Number(m[5]||0),Number(m[6]||0));
-    return isNaN(d.getTime())?null:d;
-  }
-  // Dukungan untuk format ISO jika backend berubah di kemudian hari.
-  const d=new Date(s);
-  return isNaN(d.getTime())?null:d;
-}
-
-function renderPartnerPerformance(rows){
-  const host=document.getElementById('partnerPerformance');
-  if(!host)return;
-  const data=Array.isArray(rows)?rows:[];
-  const now=new Date();
-  const month=now.getMonth(), year=now.getFullYear();
-  let monthRows=0, monthCoin=0;
-  const daily=new Array(7).fill(0);
-  const dailyCount=new Array(7).fill(0);
-  const dayLabels=[];
-  const todayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-
-  for(let i=6;i>=0;i--){
-    const d=new Date(todayStart);
-    d.setDate(d.getDate()-i);
-    daily[6-i]=0;
-    dailyCount[6-i]=0;
-    dayLabels.push(d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit'}));
+  if(isUser()){
+    box.innerHTML='<div class="summaryCard"><div class="summaryLoading">Memuat...</div></div>'.repeat(3);
+    callServer('getUserDashboardData',[session.token],d=>{
+      d=d||{};
+      box.innerHTML=
+        dashboardCard('🪙','Total Koin Keluar',d.totalCoinKeluar ?? 0)+
+        dashboardCard('📊','Total Transaksi',d.totalTransaksi ?? 0)+
+        dashboardCard('🆔','Total ID',d.totalId ?? 0);
+    },e=>{
+      box.innerHTML='<div class="summaryCard" style="grid-column:1/-1"><div class="summaryLoading">Gagal memuat ringkasan: '+esc(normalizeError(e))+'</div></div>';
+    });
+    return;
   }
 
-  data.forEach(r=>{
-    const n=Number(r?.coinKeluar)||0;
-    const d=parsePartnerDate(r?.tanggal);
-    if(!d)return;
-
-    if(d.getMonth()===month && d.getFullYear()===year){
-      monthRows++;
-      monthCoin+=n;
-    }
-
-    const rowDate=new Date(d.getFullYear(),d.getMonth(),d.getDate());
-    const diff=Math.round((todayStart-rowDate)/86400000);
-    if(diff>=0 && diff<7){
-      daily[6-diff]+=n;
-      dailyCount[6-diff]++;
-    }
+  box.innerHTML='<div class="summaryCard"><div class="summaryLoading">Memuat...</div></div>'.repeat(5);
+  callServer('getDashboardData',[session.token],d=>{
+    d=d||{};
+    box.innerHTML=
+      dashboardCard('🪙','Total Koin Keluar',d.totalCoinKeluar ?? 0)+
+      dashboardCard('👤','Total User',d.totalNote2 ?? 0)+
+      dashboardCard('📊','Total Transaksi',d.totalTransaksi ?? 0)+
+      dashboardCard('👥','Total Reseller',d.totalReseller ?? 0)+
+      dashboardCard('🔗','Total Referral',d.totalReferral ?? 0);
+  },e=>{
+    box.innerHTML='<div class="summaryCard" style="grid-column:1/-1"><div class="summaryLoading">Gagal memuat ringkasan: '+esc(normalizeError(e))+'</div></div>';
   });
-
-  const max=Math.max(...daily,1);
-  const bars=daily.map((v,i)=>{
-    const height=v>0?Math.max(8,Math.round(v/max*100)):2;
-    return '<div class="chartCol" title="'+dayLabels[i]+' • '+fmtNumber(v)+' coin • '+fmtNumber(dailyCount[i])+' transaksi">'+
-      '<div class="chartValue">'+(v>0?fmtNumber(v):'')+'</div>'+
-      '<div class="chartBar" style="height:'+height+'%"></div>'+
-      '<div class="chartLabel">'+dayLabels[i]+'</div>'+
-    '</div>';
-  }).join('');
-
-  const total=data.length;
-  host.innerHTML='<div class="partnerPerf">'+
-    '<div class="partnerPerfHead"><div><div class="partnerPerfTitle">Performa Anda</div><div class="partnerPerfSub">Data berdasarkan transaksi aktual</div></div><div class="partnerRole">7 hari terakhir</div></div>'+
-    '<div class="partnerPerfStats">'+
-      '<div class="partnerPerfStat"><div class="sLabel">Transaksi Bulan Ini</div><div class="sValue">'+fmtNumber(monthRows)+'</div></div>'+
-      '<div class="partnerPerfStat"><div class="sLabel">Coin Bulan Ini</div><div class="sValue">'+fmtNumber(monthCoin)+'</div></div>'+
-      '<div class="partnerPerfStat"><div class="sLabel">Total Transaksi</div><div class="sValue">'+fmtNumber(total)+'</div></div>'+
-    '</div>'+
-    '<div class="partnerChart">'+bars+'</div>'+
-    '</div>';
 }
-
 /* ---------------- TRANSAKSI ADMIN ---------------- */
 function loadTransactions(){
- if(!(isAdmin()||isReseller()||isReferral())){showError('Akses ditolak.');return}
- // rawForServer=true tetap aman karena Code.gs masih menerapkan roleFilter_
- // berdasarkan akun yang sedang login. Ini hanya meminta field transaksi lengkap
- // agar tampilan reseller/referral dapat memilih kolom yang dibutuhkan.
- callServer('getTransactions',[{},session.token,true],data=>renderTransactions(data),e=>showError('Gagal memuat data: '+normalizeError(e)));
+ if(isUser()){
+   callServer('getUserTransactions',[{},session.token],data=>renderUserTransactions(data),e=>showError('Gagal memuat data: '+normalizeError(e)));
+   return;
+ }
+ if(!isAdmin()){showError('Akses ditolak.');return}
+ callServer('getTransactions',[{},session.token],data=>renderTransactions(data),e=>showError('Gagal memuat data: '+normalizeError(e)));
 }
+
+function renderUserTransactions(data){
+ const rows=Array.isArray(data)?data:(data?.data||[]);
+ const ids=[...new Set(rows.map(r=>r.id).filter(Boolean))].sort();
+
+ document.getElementById('page').innerHTML=`
+ <div class="topbar">
+   <div><h1>Transaksi Saya</h1><div class="subtitle">Riwayat transaksi berdasarkan nomor HP yang sedang login</div></div>
+   <button class="btn btnGold" onclick="loadTransactions();loadDashboard()">↻ Refresh</button>
+ </div>
+ <div class="panel">
+   <div class="filters">
+     <select id="userIdFilter"><option value="">Semua ID</option>${ids.map(id=>'<option value="'+esc(id)+'">'+esc(id)+'</option>').join('')}</select>
+     <input id="userFrom" type="date">
+     <input id="userTo" type="date">
+   </div>
+   <div class="actions">
+     <button class="btn btnGold" onclick="filterUserTransactions()">Tampilkan</button>
+     <button class="btn" onclick="clearUserTransactionFilters()">Reset</button>
+   </div>
+   <div id="userTrxWrap">${renderUserTransactionTable(rows)}</div>
+ </div>
+ <div class="panel" style="margin-top:16px">
+   <div class="topbar"><div><h2>ID Saya</h2><div class="subtitle">Semua ID yang terhubung dengan nomor HP ini</div></div></div>
+   <div class="idList">${ids.length?ids.map(id=>'<span class="badge">'+esc(id)+'</span>').join(' '):'<div class="empty">Belum ada ID.</div>'}</div>
+ </div>`;
+ if(isUser()) loadDashboard();
+}
+
+function renderUserTransactionTable(rows){
+ if(!rows.length)return '<div class="empty">Tidak ada transaksi.</div>';
+ return '<table id="userTrxTable"><thead><tr><th>Tanggal</th><th>ID</th><th>Koin Keluar</th></tr></thead><tbody>'+
+ rows.map(r=>'<tr><td>'+esc(formatValue(r.tanggal))+'</td><td>'+esc(r.id||'')+'</td><td class="num">'+fmtNumber(r.coinKeluar||0)+'</td></tr>').join('')+
+ '</tbody></table>';
+}
+
+function filterUserTransactions(){
+ const filters={
+   id:document.getElementById('userIdFilter')?.value||'',
+   startDate:document.getElementById('userFrom')?.value||'',
+   endDate:document.getElementById('userTo')?.value||''
+ };
+ callServer('getUserTransactions',[filters,session.token],data=>{
+   const wrap=document.getElementById('userTrxWrap');
+   if(wrap)wrap.innerHTML=renderUserTransactionTable(Array.isArray(data)?data:[]);
+ },e=>showError('Gagal memuat data: '+normalizeError(e)));
+}
+
+function clearUserTransactionFilters(){
+ const a=document.getElementById('userIdFilter'),b=document.getElementById('userFrom'),c=document.getElementById('userTo');
+ if(a)a.value=''; if(b)b.value=''; if(c)c.value='';
+ filterUserTransactions();
+}
+
 function renderTransactions(data){
  const rows=Array.isArray(data)?data:(data?.data||[]);
- const mine=!isAdmin();
  document.getElementById('page').innerHTML=`
- <div class="topbar"><div><h1>${mine?'Transaksi Saya':'Transaksi'}</h1><div class="subtitle">${isReseller()?'Transaksi reseller '+esc(session.username):isReferral()?'Transaksi referral '+esc(session.username):'Rekap penjualan koin dari sheet AGUSTUS'}</div></div><button class="btn btnGold" onclick="loadTransactions()">↻ Refresh</button></div>
+ <div class="topbar"><div><h1>Transaksi</h1><div class="subtitle">Rekap penjualan koin dari sheet AGUSTUS</div></div><button class="btn btnGold" onclick="loadTransactions();loadDashboard()">↻ Refresh</button></div>
  <div class="panel">
   <div class="filters">
-   ${isReferral()?'':'<input id="fId" placeholder="Filter ID">'}
-   ${isReferral()?'':'<input id="fHp" placeholder="Filter No HP">'}
+   <input id="fId" placeholder="Filter ID"><input id="fHp" placeholder="Filter No HP">
    <input id="fFrom" type="date"><input id="fTo" type="date">
   </div>
   <div class="actions"><button class="btn btnGold" onclick="filterTable('trx')">Tampilkan</button><button class="btn" onclick="clearFilters('trx')">Reset</button><button class="btn" onclick="exportCSV('trxTable')">CSV</button><button class="btn" onclick="window.print()">PDF / Print</button></div>
-  <div id="trxWrap">${mine?tableMyTransactions(rows,'trxTable'):tableFromRows(rows,'trxTable')}</div>
+  <div id="trxWrap">${tableFromRows(rows,'trxTable')}</div>
  </div>`;
- if(isAdmin()) renderDashboardFromTransactions(rows);
-}
-function tableMyTransactions(rows,id){
- if(!rows.length)return '<div class="empty">Tidak ada transaksi.</div>';
- const cols=isReseller()
-   ? [['tanggal','Tanggal'],['id','ID'],['coinKeluar','Coin Keluar'],['reseller','Reseller']]
-   : [['tanggal','Tanggal'],['coinKeluar','Coin Keluar'],['referral','Referral']];
- return '<div class="tableWrap"><table id="'+id+'"><thead><tr>'+cols.map(c=>'<th>'+esc(c[1])+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+cols.map(c=>'<td class="'+(c[0]==='coinKeluar'?'num':'')+'">'+esc(formatValue(r?.[c[0]]??'',c[0]))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+ if(isAdmin()) loadDashboard();
 }
 function tableFromRows(rows,id){
  if(!rows.length)return '<div class="empty">Tidak ada data.</div>';
-
- const cols=[
-   ['tanggal','Tanggal'],
-   ['akun','Akun'],
-   ['id','ID'],
-   ['note1','Note 1 (Nama Pengirim)'],
-   ['note2','Note 2'],
-   ['reseller','Reseller'],
-   ['referral','Referral'],
-   ['coinKeluar','Coin Keluar'],
-   ['masuk','Masuk']
- ];
-
- return '<div class="tableWrap"><table id="'+id+'"><thead><tr>'+
-   cols.map(c=>'<th>'+esc(c[1])+'</th>').join('')+
-   '</tr></thead><tbody>'+
-   rows.map(r=>'<tr>'+cols.map(c=>{
-     const v=r?.[c[0]] ?? '';
-     const cls=(c[0]==='coinKeluar'||c[0]==='masuk')?'num':'';
-     return '<td class="'+cls+'">'+esc(formatValue(v,c[0]))+'</td>';
-   }).join('')+'</tr>').join('')+
-   '</tbody></table></div>';
+ let arr=rows.map(r=>Array.isArray(r)?r:Object.values(r));
+ return '<table id="'+id+'"><thead><tr>'+arr[0].map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+
+ arr.slice(1).map(r=>'<tr>'+r.map(x=>'<td>'+esc(formatValue(x))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
 }
-
-function formatValue(x,key){
- if(x===null || x===undefined)return '';
- if(['coinKeluar','masuk','jumlahTransaksi','nilaiLevel','commission'].includes(key)){
-   return fmtNumber(x);
- }
- if(['percentage','rewardMultiplier','multiplier'].includes(key)){
-   const n=Number(x);
-   return Number.isFinite(n) ? (n<1 ? String(n) : fmtNumber(n)) : String(x);
- }
- return String(x);
+function formatValue(x){
+ if(x instanceof Date)return x.toLocaleDateString('id-ID');
+ return x??'';
 }
 
 /* ---------------- RESELLER ---------------- */
 function loadReseller(){
  if(!(isAdmin()||isReseller())){showError('Akses ditolak.');return}
- callServer('getResellerData',[{},session.token],data=>renderReseller(data),e=>showError('Gagal memuat data: '+normalizeError(e)));
+ callServer('getResellerData',[session.token],data=>renderReseller(data),e=>showError('Gagal memuat data: '+normalizeError(e)));
 }
 function renderReseller(data){
  let rows=Array.isArray(data)?data:(data?.data||[]);
@@ -1141,53 +772,15 @@ function renderReseller(data){
 }
 function renderPartnerTable(rows,id,type){
  if(!rows.length)return '<div class="empty">Tidak ada data.</div>';
-
- let cols;
- if(type==='reseller'){
-   cols=[
-     ['reseller','Reseller'],
-     ['jumlahTransaksi','Jumlah Transaksi'],
-     ['coinKeluar','Coin Keluar'],
-     ['level','Level'],
-     ['percentage','Persentase'],
-     ['commission','Komisi']
-   ];
- }else if(type==='referral'){
-   cols=[
-     ['referral','Referral'],
-     ['jumlahTransaksi','Jumlah Transaksi'],
-     ['coinKeluar','Coin Keluar'],
-     ['percentage','Persentase'],
-     ['commission','Komisi']
-   ];
- }else{
-   cols=[
-     ['noHp','No HP'],
-     ['id','ID'],
-     ['jumlahTransaksi','Jumlah Transaksi'],
-     ['coinKeluar','Coin Keluar'],
-     ['nilaiLevel','Nilai Level'],
-     ['level','Level'],
-     ['rewardMultiplier','Reward Multiplier'],
-     ['commission','Komisi']
-   ];
- }
-
- return '<div class="tableWrap"><table id="'+id+'"><thead><tr>'+
-   cols.map(c=>'<th>'+esc(c[1])+'</th>').join('')+
-   '</tr></thead><tbody>'+
-   rows.map(r=>'<tr>'+cols.map(c=>{
-     const v=r?.[c[0]] ?? '';
-     const cls=['jumlahTransaksi','coinKeluar','nilaiLevel','percentage','rewardMultiplier','commission'].includes(c[0])?'num':'';
-     return '<td class="'+cls+'">'+esc(formatValue(v,c[0]))+'</td>';
-   }).join('')+'</tr>').join('')+
-   '</tbody></table></div>';
+ let arr=rows.map(r=>Array.isArray(r)?r:Object.values(r));
+ return '<table id="'+id+'"><thead><tr>'+arr[0].map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+
+ arr.slice(1).map(r=>'<tr>'+r.map((x,i)=>'<td class="'+(i>0?'num':'')+'">'+esc(formatValue(x))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
 }
 
 /* ---------------- REFERRAL ---------------- */
 function loadReferral(){
  if(!(isAdmin()||isReferral())){showError('Akses ditolak.');return}
- callServer('getReferralData',[{},session.token],data=>renderReferral(data),e=>showError('Gagal memuat data: '+normalizeError(e)));
+ callServer('getReferralData',[session.token],data=>renderReferral(data),e=>showError('Gagal memuat data: '+normalizeError(e)));
 }
 function renderReferral(data){
  let rows=Array.isArray(data)?data:(data?.data||[]);
@@ -1201,17 +794,15 @@ function renderReferral(data){
 /* ---------------- NOTE 2 ADMIN ---------------- */
 function loadNote2(){
  if(!isAdmin()){showError('Akses ditolak.');return}
- const hp=document.getElementById('noteHp')?.value?.trim()||'';
- const id=document.getElementById('noteId')?.value?.trim()||'';
  const fn='getNote2Data';
- callServer(fn,[{noHp:hp,id:id},session.token],data=>renderNote2(data),e=>showError('Gagal memuat data: '+normalizeError(e)));
+ callServer(fn,[session.token],data=>renderNote2(data),e=>showError('Gagal memuat data: '+normalizeError(e)));
 }
 function renderNote2(data){
  let rows=Array.isArray(data)?data:(data?.data||[]);
  document.getElementById('page').innerHTML=`
  <div class="topbar"><div><h1>Note 2 / No HP</h1><div class="subtitle">No HP → ID → akumulasi Coin Keluar → Level → Reward Multiplier</div></div><button class="btn btnGold" onclick="loadNote2()">↻ Refresh</button></div>
  <div class="panel"><div class="filters"><input id="noteHp" placeholder="Filter No HP"><input id="noteId" placeholder="Filter ID"></div>
- <div class="actions"><button class="btn btnGold" onclick="loadNote2()">Tampilkan</button><button class="btn" onclick="document.getElementById('noteHp').value='';document.getElementById('noteId').value='';loadNote2()">Reset</button><button class="btn" onclick="exportCSV('noteTable')">CSV</button><button class="btn" onclick="window.print()">PDF / Print</button></div>
+ <div class="actions"><button class="btn btnGold" onclick="loadNote2()">Tampilkan</button><button class="btn" onclick="loadNote2()">Reset</button><button class="btn" onclick="exportCSV('noteTable')">CSV</button><button class="btn" onclick="window.print()">PDF / Print</button></div>
  <div id="noteWrap">${renderPartnerTable(rows,'noteTable','note')}</div></div>`;
 }
 
