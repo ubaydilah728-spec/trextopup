@@ -232,7 +232,7 @@ button{cursor:pointer}
 
 /* ===== DASHBOARD SUMMARY ===== */
 .dashboardHost{display:none}
-.dashboardHost.show{display:block}
+.dashboardHost.show{display:block;margin-bottom:18px}
 
 .summaryCards{
   display:grid;
@@ -457,6 +457,9 @@ td.num{text-align:right}
   th{position:static}
 }
 
+\n/* HOME */
+.homeWelcome{border:1px solid var(--line);border-radius:13px;padding:18px 20px;margin:0 0 16px;background:radial-gradient(circle at 100% 0,rgba(245,197,66,.09),transparent 38%),linear-gradient(145deg,#151515,#0b0b0b)}
+.homeWelcome .eyebrow{font-size:10px;color:var(--gold);font-weight:900;letter-spacing:2px}.homeWelcome h2{margin:7px 0 5px;color:#fff;font-size:25px}.homeWelcome p{margin:0;color:var(--muted);font-size:13px}
 </style>
 </head>
 <body>
@@ -527,10 +530,9 @@ let cache={};
 function esc(v){
   return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
-const API_URL='https://script.google.com/macros/s/AKfycbzTxkZm-Bu2As0Pzu-7pAMIcJ26CR5TJyNHf42mcCkIPimyeJhCQxUguiMdzPE8qjvZ/exec';
 async function callServer(fn,args,ok,fail){
   try{
-    const response=await fetch(API_URL,{
+    const response=await fetch('https://script.google.com/macros/s/AKfycbzTxkZm-Bu2As0Pzu-7pAMIcJ26CR5TJyNHf42mcCkIPimyeJhCQxUguiMdzPE8qjvZ/exec',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:fn,args:Array.isArray(args)?args:[]})
@@ -557,96 +559,80 @@ function doLogin(){
   const p=document.getElementById('loginPass').value;
   const er=document.getElementById('loginError');
   er.innerHTML='';
-  if(!u||!p){er.innerHTML='<div class="error">Username atau password wajib diisi.</div>';return;}
+  if(!u||!p){er.innerHTML='<div class="error">Username atau password wajib diisi.</div>';return}
   er.innerHTML='<div class="loading">Sedang login...</div>';
   callServer('login',[u,p],res=>{
-    if(!res||!res.success){er.innerHTML='<div class="error">'+esc(res?.message||'Username atau password salah.')+'</div>';return;}
-    session=res;
-    localStorage.setItem('TREX_TOKEN',res.token);
-    startApp();
+    if(!res||!res.success){er.innerHTML='<div class="error">'+esc(res?.message||'Username atau password salah.')+'</div>';return}
+    session=res;localStorage.setItem('TREX_TOKEN',res.token);startApp();
   },e=>er.innerHTML='<div class="error">'+esc(normalizeError(e))+'</div>');
 }
 function boot(){
-  const token=localStorage.getItem('TREX_TOKEN');
-  if(!token)return;
-  callServer('validateSession',[token],res=>{
-    if(res&&res.valid){session={...res,token};startApp();}
-    else localStorage.removeItem('TREX_TOKEN');
-  },()=>console.warn('Session validation failed temporarily.'));
+  const token=localStorage.getItem('TREX_TOKEN');if(!token)return;
+  callServer('validateSession',[token],res=>{if(res&&res.valid){session={...res,token};startApp()}else localStorage.removeItem('TREX_TOKEN')},()=>localStorage.removeItem('TREX_TOKEN'));
 }
 function role(){return String(session?.role||'').toUpperCase()}
-function isUser(){return role()==='USER'}
 function isAdmin(){return role()==='SUPERADMIN'||role()==='ADMIN'||role().includes('ADMIN')}
 function isReseller(){return role()==='RESELLER'}
 function isReferral(){return role()==='REFERRAL'}
-function startApp(){
-  document.getElementById('loginPage').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-  document.getElementById('userName').textContent=session.nama||session.username;
-  document.getElementById('userRole').textContent=session.role||'USER';
-  buildNav(); openPage(defaultPage());
+function isUser(){return role()==='USER'}
+function startApp(){document.getElementById('loginPage').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('userName').textContent=session.nama||session.username;document.getElementById('userRole').textContent=session.role||'USER';buildNav();openPage(defaultPage());if(isAdmin())loadDashboard()}
+function buildNav(){const n=document.getElementById('nav');let h='';if(isUser()){h+=navBtn('home','🏠','Beranda');h+=navBtn('mytransactions','📊','Transaksi Saya')}else{h+=navBtn('transactions','📊','Transaksi');if(isAdmin()){h+=navBtn('reseller','👥','Reseller');h+=navBtn('referral','🔗','Referral');h+=navBtn('note2','☎️','Note 2')}else if(isReseller())h+=navBtn('reseller','👥','Komisi Saya');else if(isReferral())h+=navBtn('referral','🔗','Komisi Saya')}h+=navBtn('password','🔐','Ubah Password');n.innerHTML=h}
+function navBtn(page,icon,text){return '<button data-page="'+page+'" onclick="openPage(\''+page+'\')">'+icon+' &nbsp; '+text+'</button>'}
+function defaultPage(){if(isUser())return 'home';if(isReseller())return 'reseller';if(isReferral())return 'referral';return 'home'}
+function activate(page){document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page))}
+function openPage(page){currentPage=page;activate(page);const host=document.getElementById('dashboardHost');if(host)host.classList.toggle('show',isAdmin()&&page==='home');if(page==='password'){openPassword();return}const p=document.getElementById('page');p.innerHTML='<div class="loading">Memuat data...</div>';if(page==='home')return isUser()?loadUserHome():loadAdminHome();if(page==='mytransactions')return loadMyTransactions();if(page==='transactions')return loadTransactions();if(page==='reseller')return loadReseller();if(page==='referral')return loadReferral();if(page==='note2')return loadNote2()}
+function loadAdminHome(){document.getElementById('page').innerHTML='<div class="homeWelcome"><div class="eyebrow">TREX TOP UP • ADMIN CONTROL CENTER</div><h2>Selamat Datang, '+esc(session.nama||session.username||'Administrator')+' 👋</h2><p>Pantau aktivitas TREX TOP UP dari satu tempat.</p></div><div class="panel"><div class="tableHeader"><h3>⚡ Akses Cepat</h3></div><div class="actions"><button class="btn btnGold" onclick="openPage(\'transactions\')">📊 Transaksi</button><button class="btn" onclick="openPage(\'reseller\')">👥 Reseller</button><button class="btn" onclick="openPage(\'referral\')">🔗 Referral</button><button class="btn" onclick="openPage(\'note2\')">☎️ Note 2</button></div></div>';loadDashboard()}
+function loadUserHome(){callServer('getUserDashboardData',[session.token],d=>{d=d||{};const ids=Array.isArray(d.idSummary)?d.idSummary:[];const rows=ids.length?ids.map(r=>'<tr><td>'+esc(r.id)+'</td><td class="num">'+fmtNumber(r.jumlahTransaksi||0)+'</td><td class="num">'+fmtNumber(r.coinKeluar||0)+'</td><td>'+esc(r.level||'-')+'</td><td class="num">'+fmtNumber(r.komisi||0)+'</td></tr>').join(''):'<tr><td colspan="5" class="empty">Belum ada ID yang terhubung.</td></tr>';document.getElementById('page').innerHTML='<div class="homeWelcome"><div class="eyebrow">TREX TOP UP • USER</div><h2>Halo, '+esc(session.nama||session.username||'USER')+' 👋</h2><p>Selamat datang di TREX TOP UP.</p></div><div class="panel"><div class="tableHeader"><h3>🆔 ID Saya</h3></div><div class="tableWrap"><table><thead><tr><th>ID</th><th>Jumlah Transaksi</th><th>Coin Keluar</th><th>Level</th><th>Komisi</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>'},e=>showError('Gagal memuat Beranda: '+normalizeError(e)))}
+function loadMyTransactions(){document.getElementById('page').innerHTML='<div class="panel"><div class="filters"><input id="myId" placeholder="Filter ID"><input id="myFrom" type="date"><input id="myTo" type="date"></div><div class="actions"><button class="btn btnGold" onclick="applyMyTransactions()">Tampilkan</button><button class="btn" onclick="resetMyTransactions()">Reset</button></div><div id="myWrap" class="loading">Memuat transaksi...</div></div>';applyMyTransactions()}
+function applyMyTransactions(){const f={id:document.getElementById('myId')?.value||'',startDate:document.getElementById('myFrom')?.value||'',endDate:document.getElementById('myTo')?.value||''};callServer('getUserTransactions',[session.token,f],rows=>{rows=Array.isArray(rows)?rows:[];let h='<div class="tableHeader"><h3>📊 Riwayat Transaksi</h3><span class="badgeGold">'+fmtNumber(rows.length)+' transaksi</span></div><div class="tableWrap"><table><thead><tr><th>Tanggal</th><th>ID</th><th>Coin Keluar</th></tr></thead><tbody>';if(!rows.length)h+='<tr><td colspan="3" class="empty">Tidak ada transaksi.</td></tr>';else rows.forEach(r=>h+='<tr><td>'+esc(r.tanggal)+'</td><td>'+esc(r.id)+'</td><td class="num">'+fmtNumber(r.coinKeluar)+'</td></tr>');document.getElementById('myWrap').innerHTML=h+'</tbody></table></div>'},e=>showError('Gagal memuat transaksi: '+normalizeError(e)))}
+function resetMyTransactions(){['myId','myFrom','myTo'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});applyMyTransactions()}
+
+/* ---------------- DASHBOARD SUMMARY ---------------- */
+function fmtNumber(v){
+  const n=Number(v);
+  return Number.isFinite(n)?n.toLocaleString('id-ID'):esc(v??'0');
 }
-function buildNav(){
-  const n=document.getElementById('nav'); let html='';
-  if(isUser()){
-    html+=navBtn('home','🏠','Beranda');
-    html+=navBtn('mytransactions','📊','Transaksi Saya');
-  }else{
-    html+=navBtn('transactions','📊','Transaksi');
-    if(isAdmin()){
-      html+=navBtn('reseller','👥','Reseller');
-      html+=navBtn('referral','🔗','Referral');
-      html+=navBtn('note2','☎️','Note 2');
-    }else if(isReseller()) html+=navBtn('reseller','👥','Komisi Saya');
-    else if(isReferral()) html+=navBtn('referral','🔗','Komisi Saya');
-  }
-  html+=navBtn('password','🔐','Ubah Password');
-  n.innerHTML=html;
+function dashboardCard(icon,label,value){
+  return `<div class="summaryCard">
+    <div class="summaryIcon">${icon}</div>
+    <div class="summaryLabel">${label}</div>
+    <div class="summaryValue">${fmtNumber(value)}</div>
+  </div>`;
 }
-function navBtn(page,icon,text){return '<button data-page="'+page+'" onclick="openPage(\''+page+'\')">'+icon+' &nbsp; '+text+'</button>'; }
-function defaultPage(){if(isUser())return 'home';if(isReseller())return 'reseller';if(isReferral())return 'referral';return 'transactions';}
-function activate(page){document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));}
-function openPage(page){
-  currentPage=page; activate(page);
-  const host=document.getElementById('page'); host.innerHTML='<div class="loading">Memuat data...</div>';
-  const dh=document.getElementById('dashboardHost'); if(dh)dh.classList.toggle('show',isAdmin()&&page==='transactions');
-  if(page==='password'){openPassword();return;}
-  if(page==='home')return isUser()?loadUserHome():loadDashboard();
-  if(page==='mytransactions')return loadMyTransactions();
-  if(page==='transactions')return loadTransactions();
-  if(page==='reseller')return loadReseller();
-  if(page==='referral')return loadReferral();
-  if(page==='note2')return loadNote2();
+function loadDashboard(){
+  const box=document.getElementById('dashboardCards');
+  if(!box || !session?.token)return;
+  box.innerHTML=
+    '<div class="summaryCard"><div class="summaryLoading">Memuat...</div></div>'.repeat(5);
+  callServer('getDashboardData',[session.token],d=>{
+    d=d||{};
+    box.innerHTML=
+      dashboardCard('🪙','Total Koin Keluar',d.totalCoinKeluar ?? 0)+
+      dashboardCard('🆔','Total User / ID',d.totalUser ?? 0)+
+      dashboardCard('📊','Total Transaksi',d.totalTransaksi ?? 0)+
+      dashboardCard('👥','Total Reseller',d.totalReseller ?? 0)+
+      dashboardCard('🔗','Total Referral',d.totalReferral ?? 0);
+  },e=>{
+    box.innerHTML='<div class="summaryCard" style="grid-column:1/-1"><div class="summaryLoading">Gagal memuat ringkasan: '+esc(normalizeError(e))+'</div></div>';
+  });
 }
 
-async function loadUserHome(){
-  document.getElementById('pageTitle').textContent='Beranda';
-  document.getElementById('pageSubtitle').textContent='Ringkasan akun dan seluruh transaksi Anda.';
-  callServer('getUserDashboardData',[session.token],d=>{
-    d=d||{}; const name=session.nama||session.username||'USER'; const ids=Array.isArray(d.idSummary)?d.idSummary:[];
-    const rows=ids.length?ids.map(r=>'<tr><td>'+esc(r.id)+'</td><td class="num">'+fmtNumber(r.jumlahTransaksi||0)+'</td><td class="num">'+fmtNumber(r.coinKeluar||0)+'</td><td>'+esc(r.level||'-')+'</td><td class="num">'+fmtNumber(r.komisi||0)+'</td></tr>').join(''):'<tr><td colspan="5" class="empty">Belum ada ID yang terhubung.</td></tr>';
-    document.getElementById('page').innerHTML='<div class="panel" style="margin-bottom:18px"><h2 style="margin:0;color:var(--gold-bright)">👋 Halo, '+esc(name)+'</h2><p style="margin:8px 0 0;color:var(--muted)">Selamat datang di TREX TOP UP</p></div><div class="summaryCards">'+dashboardCard('🆔','ID Terhubung',d.totalId||0)+dashboardCard('📊','Total Transaksi',d.totalTransaksi||0)+dashboardCard('🪙','Coin Keluar',d.totalCoinKeluar||0)+dashboardCard('💰','Komisi',d.totalKomisi||0)+'</div><div class="panel"><h3 style="color:var(--gold-bright)">🆔 ID Saya</h3><div class="tableWrap"><table><thead><tr><th>ID</th><th>Jumlah Transaksi</th><th>Coin Keluar</th><th>Level</th><th>Komisi</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
-  },e=>document.getElementById('page').innerHTML='<div class="alert err">Gagal memuat Beranda: '+esc(normalizeError(e))+'</div>');
-}
-async function loadMyTransactions(){
-  document.getElementById('pageTitle').textContent='Transaksi Saya';
-  document.getElementById('pageSubtitle').textContent='Rincian transaksi berdasarkan periode dan ID.';
-  document.getElementById('page').innerHTML='<div class="panel"><div class="filters"><input id="myFrom" type="date"><input id="myTo" type="date"><input id="myId" placeholder="Filter ID"><input id="mySearch" placeholder="Cari ID"></div><div class="actions"><button class="btn btnGold" onclick="applyMyTransactions()">Tampilkan</button><button class="btn" onclick="resetMyTransactions()">Reset</button></div><div id="myResult" class="loading">Memuat data transaksi...</div></div>';
-  applyMyTransactions();
-}
-function applyMyTransactions(){
-  const box=document.getElementById('myResult'); if(!box)return;
-  const filters={startDate:document.getElementById('myFrom')?.value||'',endDate:document.getElementById('myTo')?.value||'',id:document.getElementById('myId')?.value||''};
-  box.innerHTML='<div class="loading">Memuat transaksi...</div>';
-  callServer('getUserTransactions',[session.token,filters],rows=>{
-    rows=Array.isArray(rows)?rows:[]; const q=(document.getElementById('mySearch')?.value||'').toLowerCase();
-    if(q)rows=rows.filter(r=>String(r.id||'').toLowerCase().includes(q)||String(r.tanggal||'').toLowerCase().includes(q));
-    let h='<div class="tableHeader"><h3>📊 Riwayat Transaksi</h3><span class="badgeGold">'+fmtNumber(rows.length)+' transaksi</span></div><div class="tableWrap"><table><thead><tr><th>Tanggal</th><th>ID</th><th>Coin Keluar</th></tr></thead><tbody>';
-    if(!rows.length)h+='<tr><td colspan="3" class="empty">Tidak ada transaksi.</td></tr>'; else rows.forEach(r=>h+='<tr><td>'+esc(r.tanggal)+'</td><td>'+esc(r.id)+'</td><td class="num">'+fmtNumber(r.coinKeluar||0)+'</td></tr>');
-    box.innerHTML=h+'</tbody></table></div>';
-  },e=>box.innerHTML='<div class="alert err">Gagal memuat transaksi: '+esc(normalizeError(e))+'</div>');
-}
-function resetMyTransactions(){['myFrom','myTo','myId','mySearch'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});applyMyTransactions();}
+/* ---------------- TRANSAKSI ADMIN ---------------- */
+function loadTransactions(){if(!isAdmin()){showError('Akses ditolak.');return}document.getElementById('page').innerHTML='<div class="topbar"><div><h1>Transaksi</h1><div class="subtitle">Tanggal, ID, Note 2, Reseller, Referral dan Coin Keluar.</div></div><button class="btn btnGold" onclick="loadTransactions();loadDashboard()">↻ Refresh</button></div><div class="panel"><div class="filters"><input id="fId" placeholder="Filter ID"><input id="fHp" placeholder="Filter Note 2 / No HP"><input id="fFrom" type="date"><input id="fTo" type="date"></div><div class="actions"><button class="btn btnGold" onclick="applyTransactionFilter()">Tampilkan</button><button class="btn" onclick="resetTransactionFilter()">Reset</button><button class="btn" onclick="exportCSV(\'trxTable\')">CSV</button><button class="btn" onclick="exportExcel(\'trxTable\')">Excel</button><button class="btn" onclick="window.print()">PDF / Print</button></div><div id="trxWrap" class="loading">Memuat transaksi...</div></div>';applyTransactionFilter()}
+function applyTransactionFilter(){const f={id:document.getElementById('fId')?.value||'',noHp:document.getElementById('fHp')?.value||'',startDate:document.getElementById('fFrom')?.value||'',endDate:document.getElementById('fTo')?.value||''};callServer('getTransactions',[f,session.token],rows=>{rows=Array.isArray(rows)?rows:[];let h='<div class="tableHeader"><h3>📊 Riwayat Transaksi ('+fmtNumber(rows.length)+')</h3></div><div class="tableWrap"><table id="trxTable"><thead><tr><th>Tanggal</th><th>ID</th><th>Note 2</th><th>Reseller</th><th>Referral</th><th>Coin Keluar</th></tr></thead><tbody>';if(!rows.length)h+='<tr><td colspan="6" class="empty">Tidak ada data transaksi.</td></tr>';else rows.forEach(r=>h+='<tr><td>'+esc(r.tanggal)+'</td><td>'+esc(r.id)+'</td><td>'+esc(r.note2)+'</td><td>'+esc(r.reseller)+'</td><td>'+esc(r.referral)+'</td><td class="num">'+fmtNumber(r.coinKeluar)+'</td></tr>');document.getElementById('trxWrap').innerHTML=h+'</tbody></table></div>'},e=>showError('Gagal memuat data: '+normalizeError(e)))}
+function resetTransactionFilter(){['fId','fHp','fFrom','fTo'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});applyTransactionFilter()}
+function loadReseller(){if(!(isAdmin()||isReseller())){showError('Akses ditolak.');return}document.getElementById('page').innerHTML='<div class="topbar"><div><h1>Reseller</h1><div class="subtitle">Komisi = Coin Keluar × Multiplier tabel RESELLER_LEVEL.</div></div><button class="btn btnGold" onclick="loadReseller()">↻ Refresh</button></div><div class="panel"><div class="filters"><input id="resFilter" placeholder="Cari reseller..."><input id="resFrom" type="date"><input id="resTo" type="date"></div><div class="actions"><button class="btn btnGold" onclick="applyResellerFilter()">Tampilkan</button><button class="btn" onclick="resetResellerFilter()">Reset</button><button class="btn" onclick="exportCSV(\'resTable\')">CSV</button><button class="btn" onclick="exportExcel(\'resTable\')">Excel</button><button class="btn" onclick="window.print()">PDF / Print</button></div><div id="resWrap" class="loading">Memuat reseller...</div></div>';applyResellerFilter()}
+function applyResellerFilter(){const f={reseller:document.getElementById('resFilter')?.value||'',startDate:document.getElementById('resFrom')?.value||'',endDate:document.getElementById('resTo')?.value||''};callServer('getResellerData',[f,session.token],rows=>{rows=Array.isArray(rows)?rows:[];let total=rows.reduce((s,r)=>s+Number(r.commission||0),0);let h='<div class="tableHeader"><h3>👥 Reseller</h3><span class="badgeGold">Total Komisi '+fmtNumber(total)+'</span></div><div class="tableWrap"><table id="resTable"><thead><tr><th>Reseller</th><th>Transaksi</th><th>Coin Keluar</th><th>Level</th><th>Multiplier</th><th>Komisi</th></tr></thead><tbody>';if(!rows.length)h+='<tr><td colspan="6" class="empty">Tidak ada data reseller.</td></tr>';else rows.forEach(r=>h+='<tr><td>'+esc(r.reseller)+'</td><td class="num">'+fmtNumber(r.jumlahTransaksi||r.transaksi)+'</td><td class="num">'+fmtNumber(r.coinKeluar)+'</td><td>'+esc(r.level||'-')+'</td><td>'+fmtNumber(r.multiplier)+'</td><td class="num">'+fmtNumber(r.commission)+'</td></tr>');document.getElementById('resWrap').innerHTML=h+'</tbody></table></div>'},e=>showError('Gagal memuat reseller: '+normalizeError(e)))}
+function resetResellerFilter(){['resFilter','resFrom','resTo'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});applyResellerFilter()}
+function loadReferral(){if(!(isAdmin()||isReferral())){showError('Akses ditolak.');return}document.getElementById('page').innerHTML='<div class="topbar"><div><h1>Referral</h1><div class="subtitle">Komisi = Coin Keluar × 0,5.</div></div><button class="btn btnGold" onclick="loadReferral()">↻ Refresh</button></div><div class="panel"><div class="filters"><input id="refFilter" placeholder="Cari referral..."><input id="refFrom" type="date"><input id="refTo" type="date"></div><div class="actions"><button class="btn btnGold" onclick="applyReferralFilter()">Tampilkan</button><button class="btn" onclick="resetReferralFilter()">Reset</button><button class="btn" onclick="exportCSV(\'refTable\')">CSV</button><button class="btn" onclick="exportExcel(\'refTable\')">Excel</button><button class="btn" onclick="window.print()">PDF / Print</button></div><div id="refWrap" class="loading">Memuat referral...</div></div>';applyReferralFilter()}
+function applyReferralFilter(){const f={referral:document.getElementById('refFilter')?.value||'',startDate:document.getElementById('refFrom')?.value||'',endDate:document.getElementById('refTo')?.value||''};callServer('getReferralData',[f,session.token],rows=>{rows=Array.isArray(rows)?rows:[];let total=rows.reduce((s,r)=>s+Number(r.commission||0),0);let h='<div class="tableHeader"><h3>🔗 Referral</h3><span class="badgeGold">Total Komisi '+fmtNumber(total)+'</span></div><div class="tableWrap"><table id="refTable"><thead><tr><th>Referral</th><th>Transaksi</th><th>Coin Keluar</th><th>Multiplier</th><th>Komisi</th></tr></thead><tbody>';if(!rows.length)h+='<tr><td colspan="5" class="empty">Tidak ada data referral.</td></tr>';else rows.forEach(r=>h+='<tr><td>'+esc(r.referral)+'</td><td class="num">'+fmtNumber(r.jumlahTransaksi||r.transaksi)+'</td><td class="num">'+fmtNumber(r.coinKeluar)+'</td><td>0,5</td><td class="num">'+fmtNumber(r.commission)+'</td></tr>');document.getElementById('refWrap').innerHTML=h+'</tbody></table></div>'},e=>showError('Gagal memuat referral: '+normalizeError(e)))}
+function resetReferralFilter(){['refFilter','refFrom','refTo'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});applyReferralFilter()}
+function loadNote2(){if(!isAdmin()){showError('Akses ditolak.');return}document.getElementById('page').innerHTML='<div class="topbar"><div><h1>Note 2</h1><div class="subtitle">Data cepat langsung dari INDEX_NOTE2.</div></div><button class="btn btnGold" onclick="loadNote2()">↻ Refresh</button></div><div class="panel"><div class="filters"><input id="noteHp" placeholder="Filter No HP"><input id="noteId" placeholder="Filter ID"></div><div class="actions"><button class="btn btnGold" onclick="applyNote2Filter()">Tampilkan</button><button class="btn" onclick="resetNote2Filter()">Reset</button><button class="btn" onclick="rebuildNote2Index()">↻ Perbarui INDEX</button><button class="btn" onclick="exportCSV(\'noteTable\')">CSV</button><button class="btn" onclick="exportExcel(\'noteTable\')">Excel</button><button class="btn" onclick="window.print()">PDF / Print</button></div><div id="noteWrap" class="loading">Memuat Note 2...</div></div>';applyNote2Filter()}
+function applyNote2Filter(){const f={noHp:document.getElementById('noteHp')?.value||'',id:document.getElementById('noteId')?.value||''};callServer('getNote2Data',[f,session.token],rows=>{rows=Array.isArray(rows)?rows:[];let total=rows.reduce((s,r)=>s+Number(r.commission||0),0);let h='<div class="tableHeader"><h3>☎️ Note 2</h3><span class="badgeGold">Total Komisi '+fmtNumber(total)+'</span></div><div class="tableWrap"><table id="noteTable"><thead><tr><th>No HP</th><th>ID</th><th>Transaksi</th><th>Coin Keluar</th><th>Level</th><th>Multiplier</th><th>Komisi</th></tr></thead><tbody>';if(!rows.length)h+='<tr><td colspan="7" class="empty">Tidak ada data.</td></tr>';else rows.forEach(r=>h+='<tr><td>'+esc(r.noHp)+'</td><td>'+esc(r.id)+'</td><td class="num">'+fmtNumber(r.jumlahTransaksi)+'</td><td class="num">'+fmtNumber(r.coinKeluar)+'</td><td>'+esc(r.level||'-')+'</td><td>'+fmtNumber(r.multiplier||0)+'</td><td class="num">'+fmtNumber(r.commission||0)+'</td></tr>');document.getElementById('noteWrap').innerHTML=h+'</tbody></table></div>'},e=>showError('Gagal memuat Note 2: '+normalizeError(e)))}
+function resetNote2Filter(){['noteHp','noteId'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});applyNote2Filter()}
+function rebuildNote2Index(){callServer('rebuildNote2Index',[session.token],()=>applyNote2Filter(),e=>showError('Gagal memperbarui INDEX_NOTE2: '+normalizeError(e)))}
+function exportCSV(id){const t=document.getElementById(id);if(!t)return;const csv=[...t.rows].map(r=>[...r.cells].map(c=>'"'+String(c.innerText||'').replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download=id+'.csv';a.click()}
+function exportExcel(id){const t=document.getElementById(id);if(!t)return;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['<html><head><meta charset="UTF-8"></head><body>'+t.outerHTML+'</body></html>'],{type:'application/vnd.ms-excel;charset=utf-8'}));a.download=id+'.xls';a.click()}
 
 /* ---------------- PASSWORD ---------------- */
 function openPassword(){
