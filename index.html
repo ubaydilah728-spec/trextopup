@@ -527,12 +527,17 @@ let cache={};
 function esc(v){
   return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
+const API_URL='https://script.google.com/macros/s/AKfycbzTxkZm-Bu2As0Pzu-7pAMIcJ26CR5TJyNHf42mcCkIPimyeJhCQxUguiMdzPE8qjvZ/exec';
+
 async function callServer(fn,args,ok,fail){
   try{
-    const response=await fetch('/.netlify/functions/api',{
+    const response=await fetch(API_URL,{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:fn,args:Array.isArray(args)?args:[]})
+      // text/plain adalah "simple request", sehingga tidak memicu OPTIONS/405
+      // saat website GitHub Pages menghubungi Google Apps Script.
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:fn,args:Array.isArray(args)?args:[]}),
+      redirect:'follow'
     });
     const raw=await response.text();
     let payload;
