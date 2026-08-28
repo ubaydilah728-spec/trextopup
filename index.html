@@ -178,7 +178,13 @@ function startApp(){
   document.getElementById('userRole').textContent=role();
 
   buildNav();
-  openPage(isUser()?'home':'transactions');
+  openPage(
+    isUser()
+      ? 'home'
+      : (isAdmin()
+        ? 'home'
+        : (isReseller() ? 'reseller' : 'referral'))
+  );
 
   // Validasi ringan setiap 10 menit untuk memperpanjang session aktif.
   setInterval(async()=>{
@@ -197,6 +203,7 @@ function buildNav(){
     html+=navButton('home','🏠 Beranda');
     html+=navButton('mytransactions','📊 Transaksi Saya');
   }else{
+    if(isAdmin()) html+=navButton('home','🏠 Beranda');
     html+=navButton('transactions','📊 Transaksi');
     if(isAdmin()){
       html+=navButton('reseller','👥 Reseller');
@@ -226,52 +233,17 @@ function activate(page){
 async function openPage(page){
   currentPage=page;
   activate(page);
-  const dh=document.getElementById('dashboardHost'); if(dh) dh.classList.remove('show');
 
   const host=document.getElementById('page');
   host.innerHTML='<div class="loading">Memuat data...</div>';
 
-  if(page==='home'){ const dh=document.getElementById('dashboardHost'); if(dh)dh.classList.toggle('show',isAdmin()); return isAdmin()?loadAdminHome():loadUserHome(); }
+  if(page==='home')return isAdmin()?loadAdminHome():loadUserHome();
   if(page==='mytransactions')return loadMyTransactions();
   if(page==='transactions')return loadTransactions();
   if(page==='reseller')return loadReseller();
   if(page==='referral')return loadReferral();
   if(page==='note2')return loadNote2();
   if(page==='password')return renderPassword();
-}
-
-async function loadAdminHome(){
-  document.getElementById('pageTitle').textContent='Beranda';
-  document.getElementById('pageSubtitle').textContent='Ringkasan utama TREX TOP UP.';
-
-  // Ringkasan cards berada di dashboardHost agar tetap mengikuti layout lama.
-  document.getElementById('page').innerHTML=
-    '<div class="panel"><div class="topbar"><div><h2 style="margin:0;color:var(--gold)">👋 Selamat datang, Admin</h2><div class="subtitle">Pantau transaksi, user/ID, reseller, referral, dan coin keluar dari satu tempat.</div></div><button class="btn btnGold" onclick="loadAdminHome()">↻ Refresh</button></div></div>';
-  loadDashboard();
-}
-
-function loadDashboard(){
-  const box=document.getElementById('dashboardCards');
-  if(!box || !session?.token)return;
-
-  box.innerHTML='<div class="summaryCard"><div class="summaryLoading">Memuat...</div></div>'.repeat(5);
-  box.style.display='grid';
-
-  callServer('getDashboardData',[session.token],d=>{
-    d=d||{};
-    box.innerHTML=
-      dashboardCard('📊','Jumlah Transaksi',d.totalTransaksi||0)+
-      dashboardCard('👤','Jumlah User / ID',d.totalUser||d.totalNote2||0)+
-      dashboardCard('👥','Jumlah Reseller',d.totalReseller||0)+
-      dashboardCard('🔗','Jumlah Referral',d.totalReferral||0)+
-      dashboardCard('🪙','Jumlah Coin Keluar',d.totalCoinKeluar||0);
-  },e=>{
-    box.innerHTML='<div class="summaryCard" style="grid-column:1/-1"><div class="summaryLoading">Gagal memuat ringkasan: '+esc(normalizeError(e))+'</div></div>';
-  });
-}
-
-function dashboardCard(icon,label,value){
-  return '<div class="summaryCard"><div class="summaryIcon">'+icon+'</div><div class="summaryLabel">'+esc(label)+'</div><div class="summaryValue">'+num(value)+'</div></div>';
 }
 
 async function loadUserHome(){
@@ -407,119 +379,416 @@ function myTransactionsTable(rows){
   return html+'</tbody></table></div>';
 }
 
+function fmtNumber(v){
+  const n=Number(v);
+  return Number.isFinite(n)
+    ? n.toLocaleString('id-ID')
+    : '0';
+}
+
+async function loadAdminHome(){
+  document.getElementById('pageTitle').textContent='Beranda';
+  document.getElementById('pageSubtitle').textContent='Ringkasan utama TREX TOP UP.';
+
+  document.getElementById('page').innerHTML=
+    '<div class="loading">Memuat ringkasan...</div>';
+
+  try{
+    const d=await api('getDashboardData',[session.token]);
+
+    const cards=
+      '<div class="adminCards">'+
+        adminCard('🪙','TOTAL KOIN KELUAR',d.totalCoinKeluar||0)+
+        adminCard('📊','TOTAL TRANSAKSI',d.totalTransaksi||0)+
+        adminCard('🆔','TOTAL USER / ID',d.totalUser||d.totalId||0)+
+        adminCard('👥','TOTAL RESELLER',d.totalReseller||0)+
+        adminCard('🔗','TOTAL REFERRAL',d.totalReferral||0)+
+      '</div>';
+
+    const welcome=
+      '<div class="adminHomeHero">'+
+        '<div class="adminWelcome">'+
+          '<div class="eyebrowAdmin">TREX TOP UP • ADMIN CONTROL CENTER</div>'+
+          '<h2>Selamat Datang, '+esc(session.nama||'Administrator')+' 👋</h2>'+
+          '<p>Pantau seluruh aktivitas TREX TOP UP dari satu tempat. Jumlah USER dihitung berdasarkan banyaknya ID yang tercatat pada INDEX_NOTE2.</p>'+
+        '</div>'+
+        '<div class="adminMini"><strong>'+fmtNumber(d.totalUser||d.totalId||0)+'</strong><span>ID TERDAFTAR</span></div>'+
+      '</div>';
+
+    document.getElementById('page').innerHTML=welcome+cards+
+      '<div class="panel">'+
+        '<div class="adminPanelTitle"><h3>⚡ Akses Cepat</h3></div>'+
+        '<div class="actionRow">'+
+          '<button class="btn btnGold" onclick="openPage(\'transactions\')">📊 Transaksi</button>'+
+          '<button class="btn" onclick="openPage(\'reseller\')">👥 Reseller</button>'+
+          '<button class="btn" onclick="openPage(\'referral\')">🔗 Referral</button>'+
+          '<button class="btn" onclick="openPage(\'note2\')">☎️ Note 2</button>'+
+        '</div>'+
+      '</div>';
+  }catch(err){
+    document.getElementById('page').innerHTML=
+      '<div class="error">Gagal memuat Beranda: '+esc(err.message)+'</div>';
+  }
+}
+
+function adminCard(icon,label,value){
+  return '<div class="adminCard"><div class="icon">'+icon+'</div><div class="label">'+label+'</div><div class="value">'+fmtNumber(value)+'</div></div>';
+}
+
+function exportCSV(id){
+  const table=document.getElementById(id);
+  if(!table)return;
+  const lines=[...table.rows].map(function(row){
+    return [...row.cells].map(function(cell){
+      return '"'+cell.innerText.replace(/"/g,'""')+'"';
+    }).join(',');
+  });
+  const blob=new Blob([lines.join('\\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=id+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),500);
+}
+
+function exportExcel(id){
+  const table=document.getElementById(id);
+  if(!table)return;
+  const htmlExcel=
+    '<html><head><meta charset="UTF-8"></head><body>'+
+    table.outerHTML+
+    '</body></html>';
+  const blob=new Blob([htmlExcel],{
+    type:'application/vnd.ms-excel;charset=utf-8'
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=id+'.xls';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),500);
+}
+
+function exportPDF(){
+  window.print();
+}
+
+function escapeAttr(v){
+  return encodeURIComponent(String(v||''));
+}
+
 async function loadTransactions(){
   document.getElementById('pageTitle').textContent='Transaksi';
-  document.getElementById('pageSubtitle').textContent='Tanggal, ID, Note 2, Reseller, Referral, dan Coin Keluar.';
+  document.getElementById('pageSubtitle').textContent='Tanggal, ID, Note 2, Reseller, Referral dan Coin Keluar.';
 
   document.getElementById('page').innerHTML=
     '<div class="panel">'+
-      '<div class="filters">'+
-        '<input id="trxId" placeholder="Filter ID">'+
-        '<input id="trxNote2" placeholder="Filter Note 2 / No HP">'+
-        '<input id="trxReseller" placeholder="Filter Reseller">'+
-        '<input id="trxReferral" placeholder="Filter Referral">'+
+      '<div class="adminFilters">'+
+        '<input id="trxFilterId" placeholder="Cari ID">'+
+        '<input id="trxFilterHp" placeholder="Cari Note 2 / No HP">'+
+        '<input id="trxFilterReseller" placeholder="Cari Reseller">'+
+        '<input id="trxFilterReferral" placeholder="Cari Referral">'+
       '</div>'+
-      '<div class="actions">'+
+      '<div class="adminFilters">'+
+        '<input id="trxStart" type="date">'+
+        '<input id="trxEnd" type="date">'+
+      '</div>'+
+      '<div class="actionRow">'+
         '<button class="btn btnGold" onclick="applyTransactionFilter()">Tampilkan</button>'+
         '<button class="btn" onclick="resetTransactionFilter()">Reset</button>'+
-        '<button class="btn" onclick="exportCSV(\'trxTable\')">CSV</button>'+
-        '<button class="btn" onclick="exportExcel(\'trxTable\',\'TREX_Transaksi\')">Excel</button>'+
-        '<button class="btn" onclick="window.print()">PDF / Print</button>'+
+        '<button class="btn" onclick="exportCSV(\'transactionsAdminTable\')">CSV</button>'+
+        '<button class="btn" onclick="exportExcel(\'transactionsAdminTable\')">Excel</button>'+
+        '<button class="btn" onclick="exportPDF()">PDF / Print</button>'+
       '</div>'+
-      '<div id="trxResult" class="loading">Memuat transaksi...</div>'+
+      '<div id="transactionsResult" class="loading">Memuat transaksi...</div>'+
     '</div>';
-  applyTransactionFilter();
+
+  await applyTransactionFilter();
 }
 
 async function applyTransactionFilter(){
-  const box=document.getElementById('trxResult'); if(!box)return;
-  box.innerHTML='<div class="loading">Memuat transaksi...</div>';
+  const result=document.getElementById('transactionsResult');
+  if(!result)return;
+
+  result.innerHTML='<div class="loading">Memuat transaksi...</div>';
+
   const filters={
-    id:document.getElementById('trxId')?.value||'',
-    note2:document.getElementById('trxNote2')?.value||'',
-    reseller:document.getElementById('trxReseller')?.value||'',
-    referral:document.getElementById('trxReferral')?.value||''
+    id:document.getElementById('trxFilterId')?.value||'',
+    noHp:document.getElementById('trxFilterHp')?.value||'',
+    reseller:document.getElementById('trxFilterReseller')?.value||'',
+    referral:document.getElementById('trxFilterReferral')?.value||'',
+    startDate:document.getElementById('trxStart')?.value||'',
+    endDate:document.getElementById('trxEnd')?.value||''
   };
+
   try{
-    let rows=await api('getTransactions',[filters,session.token]);
-    if(filters.note2){
-      const q=filters.note2.toLowerCase();
-      rows=rows.filter(r=>String(r.note2||'').toLowerCase().includes(q));
-    }
-    box.innerHTML=transactionsTable(rows);
-  }catch(err){box.innerHTML='<div class="error">'+esc(err.message)+'</div>';}
+    const rows=await api('getTransactions',[filters,session.token]);
+    result.innerHTML=adminTransactionsTable(rows);
+  }catch(err){
+    result.innerHTML='<div class="error">Gagal memuat transaksi: '+esc(err.message)+'</div>';
+  }
 }
-function resetTransactionFilter(){['trxId','trxNote2','trxReseller','trxReferral'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});applyTransactionFilter();}
-function transactionsTable(rows){
+
+function resetTransactionFilter(){
+  ['trxFilterId','trxFilterHp','trxFilterReseller','trxFilterReferral','trxStart','trxEnd']
+    .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  applyTransactionFilter();
+}
+
+function adminTransactionsTable(rows){
   rows=Array.isArray(rows)?rows:[];
-  let html='<div class="tableWrap"><table id="trxTable"><thead><tr><th>Tanggal</th><th>ID</th><th>Note 2</th><th>Reseller</th><th>Referral</th><th>Coin Keluar</th></tr></thead><tbody>';
-  if(!rows.length)html+='<tr><td colspan="6" class="empty">Tidak ada transaksi.</td></tr>';
-  else rows.forEach(r=>html+='<tr><td>'+esc(r.tanggal)+'</td><td>'+esc(r.id)+'</td><td>'+esc(r.note2)+'</td><td>'+esc(r.reseller)+'</td><td>'+esc(r.referral)+'</td><td class="num">'+num(r.coinKeluar)+'</td></tr>');
-  return html+'</tbody></table></div>';
+  let h='<div class="tableTitle">Riwayat Transaksi ('+fmtNumber(rows.length)+')</div>'+
+    '<div class="tableWrap"><table id="transactionsAdminTable"><thead><tr>'+
+    '<th>Tanggal</th><th>ID</th><th>Note 2</th><th>Reseller</th><th>Referral</th><th>Coin Keluar</th>'+
+    '</tr></thead><tbody>';
+
+  if(!rows.length){
+    h+='<tr><td colspan="6" class="empty">Tidak ada transaksi.</td></tr>';
+  }else{
+    rows.forEach(function(r){
+      h+='<tr>'+
+        '<td>'+esc(r.tanggal)+'</td>'+
+        '<td>'+esc(r.id)+'</td>'+
+        '<td>'+esc(r.note2)+'</td>'+
+        '<td>'+esc(r.reseller)+'</td>'+
+        '<td>'+esc(r.referral)+'</td>'+
+        '<td class="num">'+fmtNumber(r.coinKeluar)+'</td>'+
+      '</tr>';
+    });
+  }
+
+  return h+'</tbody></table></div>';
 }
 
 async function loadReseller(){
   document.getElementById('pageTitle').textContent='Reseller';
-  document.getElementById('pageSubtitle').textContent='Komisi berdasarkan persentase pada tabel RESELLER_LEVEL.';
-  document.getElementById('page').innerHTML='<div class="panel"><div class="filters"><input id="resFilter" placeholder="Cari reseller..."></div><div class="actions"><button class="btn btnGold" onclick="applyResellerFilter()">Tampilkan</button><button class="btn" onclick="resetResellerFilter()">Reset</button><button class="btn" onclick="exportCSV(\'resTable\')">CSV</button><button class="btn" onclick="exportExcel(\'resTable\',\'TREX_Reseller\')">Excel</button><button class="btn" onclick="window.print()">PDF / Print</button></div><div id="resResult" class="loading">Memuat reseller...</div></div>';
+  document.getElementById('pageSubtitle').textContent='Komisi berdasarkan tabel RESELLER_LEVEL.';
+
+  document.getElementById('page').innerHTML=
+    '<div class="panel">'+
+      '<div class="adminFilters">'+
+        '<input id="resellerFilter" placeholder="Cari reseller...">'+
+        '<input id="resellerStart" type="date">'+
+        '<input id="resellerEnd" type="date">'+
+      '</div>'+
+      '<div class="actionRow">'+
+        '<button class="btn btnGold" onclick="applyResellerFilter()">Tampilkan</button>'+
+        '<button class="btn" onclick="resetResellerFilter()">Reset</button>'+
+        '<button class="btn" onclick="exportCSV(\'resellerAdminTable\')">CSV</button>'+
+        '<button class="btn" onclick="exportExcel(\'resellerAdminTable\')">Excel</button>'+
+        '<button class="btn" onclick="exportPDF()">PDF / Print</button>'+
+      '</div>'+
+      '<div id="resellerResult" class="loading">Memuat reseller...</div>'+
+    '</div>';
+
+  await applyResellerFilter();
+}
+
+async function applyResellerFilter(){
+  const result=document.getElementById('resellerResult');
+  const filters={
+    reseller:document.getElementById('resellerFilter')?.value||'',
+    startDate:document.getElementById('resellerStart')?.value||'',
+    endDate:document.getElementById('resellerEnd')?.value||''
+  };
+  result.innerHTML='<div class="loading">Memuat reseller...</div>';
+  try{
+    const rows=await api('getResellerData',[filters,session.token]);
+    result.innerHTML=resellerTable(rows);
+  }catch(err){
+    result.innerHTML='<div class="error">Gagal memuat reseller: '+esc(err.message)+'</div>';
+  }
+}
+
+function resetResellerFilter(){
+  ['resellerFilter','resellerStart','resellerEnd'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   applyResellerFilter();
 }
-async function applyResellerFilter(){
-  const box=document.getElementById('resResult'); if(!box)return;
-  try{
-    const q=document.getElementById('resFilter')?.value||'';
-    const rows=await api('getResellerData',[{},session.token]);
-    const filtered=q?rows.filter(r=>String(r.reseller||'').toLowerCase().includes(q.toLowerCase())):rows;
-    box.innerHTML='<div class="tableWrap"><table id="resTable"><thead><tr><th>Reseller</th><th>Transaksi</th><th>Coin Keluar</th><th>Level</th><th>Persentase</th><th>Komisi</th></tr></thead><tbody>'+
-      (filtered.length?filtered.map(r=>'<tr><td>'+esc(r.reseller)+'</td><td class="num">'+num(r.jumlahTransaksi||0)+'</td><td class="num">'+num(r.coinKeluar||0)+'</td><td>'+esc(r.level||'-')+'</td><td class="num">'+num(r.percentage||0)+'%</td><td class="num">'+num(r.commission||0)+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">Tidak ada data reseller.</td></tr>')+
-      '</tbody></table></div>';
-  }catch(err){box.innerHTML='<div class="error">'+esc(err.message)+'</div>';}
+
+function resellerTable(rows){
+  rows=Array.isArray(rows)?rows:[];
+  let totalCommission=0;
+  rows.forEach(r=>totalCommission+=Number(r.commission||0));
+
+  let h='<div class="tableTitle">Reseller ('+fmtNumber(rows.length)+') • Total Komisi: '+fmtNumber(totalCommission)+'</div>'+
+    '<div class="tableWrap"><table id="resellerAdminTable"><thead><tr>'+
+    '<th>Reseller</th><th>Transaksi</th><th>Coin Keluar</th><th>Level</th><th>Multiplier</th><th>Komisi</th>'+
+    '</tr></thead><tbody>';
+
+  if(!rows.length){
+    h+='<tr><td colspan="6" class="empty">Tidak ada reseller.</td></tr>';
+  }else{
+    rows.forEach(function(r){
+      h+='<tr>'+
+        '<td>'+esc(r.reseller)+'</td>'+
+        '<td class="num">'+fmtNumber(r.jumlahTransaksi)+'</td>'+
+        '<td class="num">'+fmtNumber(r.coinKeluar)+'</td>'+
+        '<td>'+esc(r.level||'-')+'</td>'+
+        '<td><span class="percentBadge">'+num(r.percentage||0)+'%</span></td>'+
+        '<td class="num">'+fmtNumber(r.commission||0)+'</td>'+
+      '</tr>';
+    });
+  }
+  return h+'</tbody></table></div>';
 }
-function resetResellerFilter(){document.getElementById('resFilter').value='';applyResellerFilter();}
 
 async function loadReferral(){
   document.getElementById('pageTitle').textContent='Referral';
   document.getElementById('pageSubtitle').textContent='Komisi referral = Coin Keluar × 0,5%.';
-  document.getElementById('page').innerHTML='<div class="panel"><div class="filters"><input id="refFilter" placeholder="Cari referral..."></div><div class="actions"><button class="btn btnGold" onclick="applyReferralFilter()">Tampilkan</button><button class="btn" onclick="resetReferralFilter()">Reset</button><button class="btn" onclick="exportCSV(\'refTable\')">CSV</button><button class="btn" onclick="exportExcel(\'refTable\',\'TREX_Referral\')">Excel</button><button class="btn" onclick="window.print()">PDF / Print</button></div><div id="refResult" class="loading">Memuat referral...</div></div>';
+
+  document.getElementById('page').innerHTML=
+    '<div class="panel">'+
+      '<div class="adminFilters">'+
+        '<input id="referralFilter" placeholder="Cari referral...">'+
+        '<input id="referralStart" type="date">'+
+        '<input id="referralEnd" type="date">'+
+      '</div>'+
+      '<div class="actionRow">'+
+        '<button class="btn btnGold" onclick="applyReferralFilter()">Tampilkan</button>'+
+        '<button class="btn" onclick="resetReferralFilter()">Reset</button>'+
+        '<button class="btn" onclick="exportCSV(\'referralAdminTable\')">CSV</button>'+
+        '<button class="btn" onclick="exportExcel(\'referralAdminTable\')">Excel</button>'+
+        '<button class="btn" onclick="exportPDF()">PDF / Print</button>'+
+      '</div>'+
+      '<div id="referralResult" class="loading">Memuat referral...</div>'+
+    '</div>';
+
+  await applyReferralFilter();
+}
+
+async function applyReferralFilter(){
+  const result=document.getElementById('referralResult');
+  const filters={
+    referral:document.getElementById('referralFilter')?.value||'',
+    startDate:document.getElementById('referralStart')?.value||'',
+    endDate:document.getElementById('referralEnd')?.value||''
+  };
+  result.innerHTML='<div class="loading">Memuat referral...</div>';
+  try{
+    const rows=await api('getReferralData',[filters,session.token]);
+    result.innerHTML=referralTable(rows);
+  }catch(err){
+    result.innerHTML='<div class="error">Gagal memuat referral: '+esc(err.message)+'</div>';
+  }
+}
+
+function resetReferralFilter(){
+  ['referralFilter','referralStart','referralEnd'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   applyReferralFilter();
 }
-async function applyReferralFilter(){
-  const box=document.getElementById('refResult'); if(!box)return;
-  try{
-    const q=document.getElementById('refFilter')?.value||'';
-    const rows=await api('getReferralData',[{},session.token]);
-    const filtered=q?rows.filter(r=>String(r.referral||'').toLowerCase().includes(q.toLowerCase())):rows;
-    box.innerHTML='<div class="tableWrap"><table id="refTable"><thead><tr><th>Referral</th><th>Transaksi</th><th>Coin Keluar</th><th>Persentase</th><th>Komisi</th></tr></thead><tbody>'+
-      (filtered.length?filtered.map(r=>'<tr><td>'+esc(r.referral)+'</td><td class="num">'+num(r.jumlahTransaksi||0)+'</td><td class="num">'+num(r.coinKeluar||0)+'</td><td class="num">'+num(r.percentage||0)+'%</td><td class="num">'+num(r.commission||0)+'</td></tr>').join(''):'<tr><td colspan="5" class="empty">Tidak ada data referral.</td></tr>')+
-      '</tbody></table></div>';
-  }catch(err){box.innerHTML='<div class="error">'+esc(err.message)+'</div>';}
+
+function referralTable(rows){
+  rows=Array.isArray(rows)?rows:[];
+  let totalCommission=0;
+  rows.forEach(r=>totalCommission+=Number(r.commission||0));
+
+  let h='<div class="tableTitle">Referral ('+fmtNumber(rows.length)+') • Total Komisi: '+fmtNumber(totalCommission)+'</div>'+
+    '<div class="tableWrap"><table id="referralAdminTable"><thead><tr>'+
+    '<th>Referral</th><th>Transaksi</th><th>Coin Keluar</th><th>Multiplier</th><th>Komisi</th>'+
+    '</tr></thead><tbody>';
+
+  if(!rows.length){
+    h+='<tr><td colspan="5" class="empty">Tidak ada referral.</td></tr>';
+  }else{
+    rows.forEach(function(r){
+      h+='<tr>'+
+        '<td>'+esc(r.referral)+'</td>'+
+        '<td class="num">'+fmtNumber(r.jumlahTransaksi)+'</td>'+
+        '<td class="num">'+fmtNumber(r.coinKeluar)+'</td>'+
+        '<td><span class="percentBadge">'+num(r.percentage||0)+'%</span></td>'+
+        '<td class="num">'+fmtNumber(r.commission||0)+'</td>'+
+      '</tr>';
+    });
+  }
+  return h+'</tbody></table></div>';
 }
-function resetReferralFilter(){document.getElementById('refFilter').value='';applyReferralFilter();}
 
 async function loadNote2(){
   document.getElementById('pageTitle').textContent='Note 2';
-  document.getElementById('pageSubtitle').textContent='No HP → ID → Coin Keluar → Level → Komisi.';
-  document.getElementById('page').innerHTML='<div class="panel"><div class="filters"><input id="noteHp" placeholder="Filter No HP"><input id="noteId" placeholder="Filter ID"></div><div class="actions"><button class="btn btnGold" onclick="applyNote2Filter()">Tampilkan</button><button class="btn" onclick="resetNote2Filter()">Reset</button><button class="btn" onclick="exportCSV(\'noteTable\')">CSV</button><button class="btn" onclick="exportExcel(\'noteTable\',\'TREX_Note2\')">Excel</button><button class="btn" onclick="window.print()">PDF / Print</button></div><div id="noteResult" class="loading">Memuat Note 2...</div></div>';
-  applyNote2Filter();
+  document.getElementById('pageSubtitle').textContent='Data langsung dari INDEX_NOTE2 untuk pencarian cepat.';
+
+  document.getElementById('page').innerHTML=
+    '<div class="panel">'+
+      '<div class="adminFilters">'+
+        '<input id="noteHp" placeholder="Cari No HP...">'+
+        '<input id="noteId" placeholder="Cari ID...">'+
+      '</div>'+
+      '<div class="actionRow">'+
+        '<button class="btn btnGold" onclick="applyNote2Filter()">Tampilkan</button>'+
+        '<button class="btn" onclick="resetNote2Filter()">Reset</button>'+
+        '<button class="btn" onclick="rebuildIndexNow()">↻ Perbarui Index</button>'+
+        '<button class="btn" onclick="exportCSV(\'note2AdminTable\')">CSV</button>'+
+        '<button class="btn" onclick="exportExcel(\'note2AdminTable\')">Excel</button>'+
+        '<button class="btn" onclick="exportPDF()">PDF / Print</button>'+
+      '</div>'+
+      '<div id="note2Result" class="loading">Memuat Note 2...</div>'+
+    '</div>';
+
+  await applyNote2Filter();
 }
+
 async function applyNote2Filter(){
-  const box=document.getElementById('noteResult'); if(!box)return;
-  const filters={noHp:document.getElementById('noteHp')?.value||'',id:document.getElementById('noteId')?.value||''};
+  const result=document.getElementById('note2Result');
+  const filters={
+    noHp:document.getElementById('noteHp')?.value||'',
+    id:document.getElementById('noteId')?.value||''
+  };
+  result.innerHTML='<div class="loading">Memuat dari INDEX_NOTE2...</div>';
   try{
     const rows=await api('getNote2Data',[filters,session.token]);
-    let html='<div class="tableWrap"><table id="noteTable"><thead><tr><th>No HP</th><th>ID</th><th>Transaksi</th><th>Coin Keluar</th><th>Level</th><th>Persentase</th><th>Komisi</th></tr></thead><tbody>';
-    if(!rows.length)html+='<tr><td colspan="7" class="empty">Tidak ada data.</td></tr>';
-    else rows.forEach(r=>html+='<tr><td>'+esc(r.noHp)+'</td><td>'+esc(r.id)+'</td><td class="num">'+num(r.jumlahTransaksi)+'</td><td class="num">'+num(r.coinKeluar)+'</td><td>'+esc(r.level||'-')+'</td><td class="num">'+num(r.rewardMultiplier||0)+'%</td><td class="num">'+num(r.commission||0)+'</td></tr>');
-    box.innerHTML=html+'</tbody></table></div>';
-  }catch(err){box.innerHTML='<div class="error">'+esc(err.message)+'</div>';}
+    result.innerHTML=note2Table(rows);
+  }catch(err){
+    result.innerHTML='<div class="error">Gagal memuat Note 2: '+esc(err.message)+'</div>';
+  }
 }
-function resetNote2Filter(){document.getElementById('noteHp').value='';document.getElementById('noteId').value='';applyNote2Filter();}
-function exportExcel(tableId,fileName){
-  const table=document.getElementById(tableId);if(!table)return;
-  const doc='<html><head><meta charset="UTF-8"></head><body><table border="1">'+table.innerHTML+'</table></body></html>';
-  const blob=new Blob(['\ufeff',doc],{type:'application/vnd.ms-excel'});
-  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=(fileName||tableId)+'.xls';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+function resetNote2Filter(){
+  ['noteHp','noteId'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  applyNote2Filter();
 }
+
+async function rebuildIndexNow(){
+  const result=document.getElementById('note2Result');
+  result.innerHTML='<div class="loading">Memperbarui INDEX_NOTE2 dari AGUSTUS sekali saja...</div>';
+  try{
+    await api('rebuildNote2Index',[session.token]);
+    await applyNote2Filter();
+  }catch(err){
+    result.innerHTML='<div class="error">Gagal memperbarui index: '+esc(err.message)+'</div>';
+  }
+}
+
+function note2Table(rows){
+  rows=Array.isArray(rows)?rows:[];
+  let totalCommission=0;
+  rows.forEach(r=>totalCommission+=Number(r.commission||0));
+
+  let h='<div class="tableTitle">Note 2 ('+fmtNumber(rows.length)+') • Total Komisi: '+fmtNumber(totalCommission)+'</div>'+
+    '<div class="tableWrap"><table id="note2AdminTable"><thead><tr>'+
+    '<th>No HP</th><th>ID</th><th>Transaksi</th><th>Coin Keluar</th><th>Level</th><th>Multiplier</th><th>Komisi</th>'+
+    '</tr></thead><tbody>';
+
+  if(!rows.length){
+    h+='<tr><td colspan="7" class="empty">Tidak ada data.</td></tr>';
+  }else{
+    rows.forEach(function(r){
+      h+='<tr>'+
+        '<td>'+esc(r.noHp)+'</td>'+
+        '<td>'+esc(r.id)+'</td>'+
+        '<td class="num">'+fmtNumber(r.jumlahTransaksi)+'</td>'+
+        '<td class="num">'+fmtNumber(r.coinKeluar)+'</td>'+
+        '<td>'+esc(r.level||'-')+'</td>'+
+        '<td><span class="percentBadge">'+num(r.rewardMultiplier||0)+'%</span></td>'+
+        '<td class="num">'+fmtNumber(r.commission||0)+'</td>'+
+      '</tr>';
+    });
+  }
+  return h+'</tbody></table></div>';
+}
+
 
 function renderPassword(){
   document.getElementById('pageTitle').textContent='Ubah Password';
