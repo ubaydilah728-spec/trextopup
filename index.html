@@ -1193,12 +1193,29 @@ function clearTransactionFilters(){
   loadTransactions();
 }
 function tableMyTransactions(rows,id){
- if(!rows.length)return '<div class="empty">Tidak ada transaksi.</div>';
- const cols=isReseller()
-   ? [['tanggal','Tanggal'],['id','ID'],['coinKeluar','Coin Keluar'],['reseller','Reseller']]
-   : [['tanggal','Tanggal'],['coinKeluar','Coin Keluar'],['referral','Referral']];
- return '<div class="tableWrap"><table id="'+id+'"><thead><tr>'+cols.map(c=>'<th>'+esc(c[1])+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+cols.map(c=>'<td class="'+(c[0]==='coinKeluar'?'num':'')+'">'+esc(formatValue(r?.[c[0]]??'',c[0]))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+  if(!rows.length)return '<div class="empty">Tidak ada transaksi.</div>';
+
+  const cols=[
+    ['tanggal','Tanggal'],
+    ['id','ID'],
+    ['coinKeluar','Jumlah Coin Keluar']
+  ];
+
+  return '<div class="tableWrap"><table id="'+id+'"><thead><tr>'+
+    cols.map(c=>'<th>'+esc(c[1])+'</th>').join('')+
+    '</tr></thead><tbody>'+
+    rows.map(r=>'<tr>'+
+      cols.map(c=>{
+        const value=r?.[c[0]]??'';
+        const cls=c[0]==='coinKeluar'?'num':'';
+        return '<td class="'+cls+'">'+
+          esc(formatValue(value,c[0]))+
+        '</td>';
+      }).join('')+
+    '</tr>').join('')+
+    '</tbody></table></div>';
 }
+
 function tableFromRows(rows,id){
   if(!rows.length)return '<div class="empty">Tidak ada transaksi.</div>';
 
@@ -1316,7 +1333,7 @@ function loadNote2(){
 function renderNote2(data){
  let rows=Array.isArray(data)?data:(data?.data||[]);
  document.getElementById('page').innerHTML=`
- <div class="topbar"><div><h1>Note 2 / No HP</h1><div class="subtitle">No HP → ID → akumulasi Coin Keluar → Level → Reward Multiplier</div></div><button class="btn btnGold" onclick="loadNote2()">↻ Refresh</button></div>
+ <div class="topbar"><div><h1>Note 2 / No HP</h1><div class="subtitle">Pencarian cepat dari INDEX_NOTE2 → No HP → ID → Coin Keluar → Level → Komisi</div></div><button class="btn btnGold" onclick="loadNote2()">↻ Refresh</button></div>
  <div class="panel"><div class="filters"><input id="noteHp" placeholder="Filter No HP"><input id="noteId" placeholder="Filter ID"></div>
  <div class="actions"><button class="btn btnGold" onclick="loadNote2()">Tampilkan</button><button class="btn" onclick="document.getElementById('noteHp').value='';document.getElementById('noteId').value='';loadNote2()">Reset</button><button class="btn" onclick="exportCSV('noteTable')">CSV</button><button class="btn" onclick="exportExcel('noteTable')">Excel</button><button class="btn" onclick="rebuildNote2Index()">↻ Perbarui INDEX</button><button class="btn" onclick="window.print()">PDF / Print</button></div>
  <div id="noteWrap">${renderPartnerTable(rows,'noteTable','note')}</div></div>`;
