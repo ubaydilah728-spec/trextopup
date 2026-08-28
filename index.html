@@ -676,6 +676,11 @@ td.num{text-align:center}
   th{position:static}
 }
 
+
+/* FINAL FILTER LOOK */
+.filters input,.filters select{background:#0b0c0e!important;color:#e8e8e8!important;border:1px solid #34373b!important}
+.filters input::placeholder{color:#858b92!important}
+.filters input:focus,.filters select:focus{outline:none!important;border-color:rgba(242,184,30,.75)!important;box-shadow:0 0 0 3px rgba(242,184,30,.08)!important}
 </style>
 </head>
 <body>
@@ -1142,13 +1147,17 @@ function loadTransactions(){
   callServer(
     'getTransactions',
     [{id:id,noHp:hp,startDate:from,endDate:to},session.token,true],
-    data=>renderTransactions(data),
+    data=>renderTransactions(data,{id:id,hp:hp,from:from,to:to}),
     e=>showError('Gagal memuat data: '+normalizeError(e))
   );
 }
 
-function renderTransactions(data){
+function renderTransactions(data,filters={}){
   const rows=Array.isArray(data)?data:(data?.data||[]);
+  const id=filters.id||'';
+  const hp=filters.hp||'';
+  const from=filters.from||'';
+  const to=filters.to||'';
   const mine=!isAdmin();
 
   document.getElementById('page').innerHTML=`
