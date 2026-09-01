@@ -681,6 +681,15 @@ td.num{text-align:center}
 .filters input,.filters select{background:#0b0c0e!important;color:#e8e8e8!important;border:1px solid #34373b!important}
 .filters input::placeholder{color:#858b92!important}
 .filters input:focus,.filters select:focus{outline:none!important;border-color:rgba(242,184,30,.75)!important;box-shadow:0 0 0 3px rgba(242,184,30,.08)!important}
+
+.perfTableWrap{overflow:auto;margin-top:14px;border:1px solid rgba(255,193,7,.20);border-radius:12px;background:#0b0b0b}
+.perfTable{width:100%;border-collapse:collapse;min-width:620px}
+.perfTable th,.perfTable td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.perfTable th{text-align:left;color:#f4be18;background:rgba(255,193,7,.06)}
+.perfTable th:nth-child(n+2),.perfTable td:nth-child(n+2){text-align:right}
+.perfTable tbody tr:hover{background:rgba(255,193,7,.03)}
+.perfTable tfoot td{border-top:1px solid rgba(255,193,7,.25);border-bottom:0;color:#f4be18;background:rgba(255,193,7,.05)}
+.perfGraphTitle{margin:22px 0 10px;font-weight:700;color:#f4be18}
 </style>
 </head>
 <body>
@@ -1122,10 +1131,7 @@ function loadPartnerPerformance(){
   if(isReseller()){
     callServer(
       'getResellerPerformance',
-      [{
-        month:new Date().getMonth(),
-        year:new Date().getFullYear()
-      },session.token],
+      [{},session.token],
       data=>renderResellerPerformance(data||{}),
       e=>{
         const h=document.getElementById('partnerPerformance');
@@ -1151,65 +1157,47 @@ function renderResellerPerformance(data){
   if(!host)return;
 
   data=data||{};
-  const totalId=Number(data.totalIdBulanIni||0);
-  const monthCoin=Number(data.coinBulanIni||0);
-  const total=data && data.totalTransaksi!==undefined
-    ? Number(data.totalTransaksi||0)
-    : 0;
 
-  const dailyMap=Object.create(null);
-  (Array.isArray(data.daily)?data.daily:[]).forEach(function(x){
-    dailyMap[String(x.date)]=Number(x.coin||0);
-  });
+  const ids=Array.isArray(data.ids)?data.ids:[];
+  const totalId=Number(data.totalId||0);
+  const totalCoin=Number(data.totalCoin||0);
+  const totalTransaksi=Number(data.totalTransaksi||0);
 
-  const base=new Date();
-  const year=Number(data.year)||base.getFullYear();
-  const month=(Number(data.month)||base.getMonth()+1)-1;
-  const first=new Date(year,month,1);
-  const last=new Date(year,month+1,0);
+  const rows=ids.length
+    ? ids.map(function(x){
+        return '<tr>'+
+          '<td>'+esc(x.id||'-')+'</td>'+
+          '<td class="num">'+fmtNumber(x.coin||0)+'</td>'+
+          '<td class="num">'+fmtNumber(x.transaksi||0)+'</td>'+
+        '</tr>';
+      }).join('')
+    : '<tr><td colspan="3" class="empty">Belum ada data ID pada periode ini.</td></tr>';
 
-  // 7 hari terakhir dari akhir bulan data yang tersedia.
-  const endDate=new Date(last);
-  const now=new Date();
-  if(
-    now.getFullYear()===year &&
-    now.getMonth()===month &&
-    now.getDate()<endDate.getDate()
-  ){
-    endDate.setDate(now.getDate());
-  }
-
-  const daily=[];
-  for(let i=6;i>=0;i--){
-    const d=new Date(endDate);
-    d.setDate(d.getDate()-i);
-
-    const key=
-      d.getFullYear()+'-'+
-      String(d.getMonth()+1).padStart(2,'0')+'-'+
-      String(d.getDate()).padStart(2,'0');
-
-    daily.push({
-      label:d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit'}),
-      coin:Number(dailyMap[key]||0)
-    });
-  }
-
-  const max=Math.max(...daily.map(x=>x.coin),1);
+  const daily=Array.isArray(data.daily)?data.daily:[];
+  const max=Math.max(
+    ...daily.map(function(x){return Number(x.coin||0);}),
+    1
+  );
 
   const bars=daily.map(function(x){
-    const height=x.coin>0
-      ? Math.max(8,Math.round(x.coin/max*100))
+    const parts=String(x.date||'').split('-');
+    const label=parts.length===3
+      ? parts[2]
+      : String(x.date||'');
+
+    const value=Number(x.coin||0);
+    const height=value>0
+      ? Math.max(8,Math.round(value/max*100))
       : 2;
 
     return '<div class="chartCol" title="'+
-      esc(x.label+' • '+fmtNumber(x.coin)+' coin')+
+      esc(label+' • '+fmtNumber(value)+' coin')+
       '">'+
       '<div class="chartValue">'+
-        (x.coin>0?fmtNumber(x.coin):'')+
+        (value>0?fmtNumber(value):'')+
       '</div>'+
       '<div class="chartBar" style="height:'+height+'%"></div>'+
-      '<div class="chartLabel">'+esc(x.label)+'</div>'+
+      '<div class="chartLabel">'+esc(label)+'</div>'+
     '</div>';
   }).join('');
 
@@ -1218,27 +1206,38 @@ function renderResellerPerformance(data){
       '<div class="partnerPerfHead">'+
         '<div>'+
           '<div class="partnerPerfTitle">Performa Anda</div>'+
-          '<div class="partnerPerfSub">Rangkuman ID dan coin berdasarkan data reseller</div>'+
+          '<div class="partnerPerfSub">Rangkuman ID dan Coin Keluar</div>'+
         '</div>'+
-        '<div class="partnerRole">7 hari terakhir</div>'+
+        '<div class="partnerRole">'+esc(data.label||'')+'</div>'+
       '</div>'+
-      '<div class="partnerPerfStats">'+
-        '<div class="partnerPerfStat">'+
-          '<div class="sLabel">ID Bulan Ini</div>'+
-          '<div class="sValue">'+fmtNumber(totalId)+'</div>'+
-        '</div>'+
-        '<div class="partnerPerfStat">'+
-          '<div class="sLabel">Coin Bulan Ini</div>'+
-          '<div class="sValue">'+fmtNumber(monthCoin)+'</div>'+
-        '</div>'+
-        '<div class="partnerPerfStat">'+
-          '<div class="sLabel">Total Transaksi</div>'+
-          '<div class="sValue">'+fmtNumber(total)+'</div>'+
-        '</div>'+
+      '<div class="perfTableWrap">'+
+        '<table class="perfTable">'+
+          '<thead>'+
+            '<tr>'+
+              '<th>ID Bulan Ini</th>'+
+              '<th>Coin Bulan Ini</th>'+
+              '<th>Transaksi</th>'+
+            '</tr>'+
+          '</thead>'+
+          '<tbody>'+
+            rows+
+          '</tbody>'+
+          '<tfoot>'+
+            '<tr>'+
+              '<td><strong>TOTAL ('+fmtNumber(totalId)+' ID)</strong></td>'+
+              '<td class="num"><strong>'+fmtNumber(totalCoin)+'</strong></td>'+
+              '<td class="num"><strong>'+fmtNumber(totalTransaksi)+'</strong></td>'+
+            '</tr>'+
+          '</tfoot>'+
+        '</table>'+
       '</div>'+
-      '<div class="partnerChart">'+bars+'</div>'+
+      '<div class="perfGraphTitle">Grafik Coin Keluar</div>'+
+      '<div class="partnerChart monthChart">'+
+        (bars || '<div class="empty">Belum ada data grafik.</div>')+
+      '</div>'+
     '</div>';
 }
+
 
 
 function parsePartnerDate(value){
