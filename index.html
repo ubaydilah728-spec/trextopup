@@ -1052,10 +1052,15 @@ function loadPartnerHome(){
     const rows=Array.isArray(data)?data:(data?.data||[]);
     let item=null;
     if(isReseller()){
-      item=rows.find(r=>String(r?.reseller||'').toUpperCase()===String(session.username||'').toUpperCase()) || rows[0];
+      item=rows.find(r=>String(r?.reseller||'').trim().toUpperCase()===String(session.username||'').trim().toUpperCase()) || null;
     }else{
-      item=rows.find(r=>String(r?.referral||'').toUpperCase()===String(session.username||'').toUpperCase()) || rows[0];
+      item=rows.find(r=>String(r?.referral||'').trim().toUpperCase()===String(session.username||'').trim().toUpperCase()) || null;
     }
+    if(!item){
+      p.innerHTML='<div class="partnerHome"><div class="partnerHomeInner"><div class="alert err">Data akun '+esc(session.username||'')+' belum ditemukan.</div></div></div>';
+      return;
+    }
+
     renderPartnerHome(item,roleLabel);
     // Grafik/performa dimuat terpisah agar kartu utama tidak menunggu transaksi.
     loadPartnerPerformance();
@@ -1117,11 +1122,14 @@ function loadPartnerPerformance(){
   if(isReseller()){
     callServer(
       'getResellerPerformance',
-      [{},session.token],
+      [{
+        month:new Date().getMonth(),
+        year:new Date().getFullYear()
+      },session.token],
       data=>renderResellerPerformance(data||{}),
       e=>{
         const h=document.getElementById('partnerPerformance');
-        if(h)h.innerHTML='<div class="partnerPerf"><div class="partnerPerfTitle">Performa Anda</div><div class="partnerPerfSub">Data belum tersedia.</div></div>';
+        if(h)h.innerHTML='<div class="partnerPerf"><div class="partnerPerfTitle">Performa Anda</div><div class="partnerPerfSub">Gagal memuat performa: '+esc(normalizeError(e))+'</div></div>';
       }
     );
     return;
