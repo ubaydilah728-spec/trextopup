@@ -1584,6 +1584,28 @@ function sendResellerReport(r,btn){
   const from=document.getElementById('resFrom')?.value||'';
   const to=document.getElementById('resTo')?.value||'';
 
+  /*
+   * Buka tab WhatsApp SEGERA pada event klik user.
+   * Kalau baru window.open setelah API selesai, Firefox
+   * dapat menganggapnya popup dan memblokir.
+   */
+  const waWindow=window.open('about:blank','_blank');
+
+  if(!waWindow){
+    alert('Firefox memblokir popup. Izinkan popup untuk trextopup.com lalu coba lagi.');
+    return;
+  }
+
+  try{
+    waWindow.document.write(
+      '<!doctype html><html><head><title>TREX TOP UP</title></head>'+
+      '<body style="font-family:Arial;padding:30px;background:#111;color:#ffd34d">'+
+      '<h2>Sedang membuat PDF laporan...</h2>'+
+      '<p>Mohon tunggu.</p></body></html>'
+    );
+    waWindow.document.close();
+  }catch(e){}
+
   if(btn){
     btn.disabled=true;
     btn.dataset.oldText=btn.innerHTML;
@@ -1624,17 +1646,25 @@ function sendResellerReport(r,btn){
         'Terima kasih.'
       ].join('\n');
 
-      window.open(
-        'https://wa.me/'+wa+'?text='+encodeURIComponent(msg),
-        '_blank',
-        'noopener'
-      );
+      const url='https://wa.me/'+wa+'?text='+encodeURIComponent(msg);
+
+      try{
+        waWindow.location.href=url;
+        waWindow.focus();
+      }catch(e){
+        window.location.href=url;
+      }
     },
     e=>{
       if(btn){
         btn.disabled=false;
         btn.innerHTML=btn.dataset.oldText||'📱 WA + PDF';
       }
+
+      try{
+        waWindow.close();
+      }catch(_){}
+
       alert('Gagal membuat PDF: '+normalizeError(e));
     }
   );
@@ -1662,19 +1692,72 @@ function sendReferralReport(r,btn){
     alert('Nomor WhatsApp referral belum diisi di ADMIN kolom H (NO WA).');
     return;
   }
+
   const from=document.getElementById('refFrom')?.value||'';
   const to=document.getElementById('refTo')?.value||'';
-  if(btn){btn.disabled=true;btn.dataset.oldText=btn.innerHTML;btn.innerHTML='⏳ Membuat PDF...';}
 
-  callServer('generateReferralReportPdf',[{
-    referral:r?.referral||'',startDate:from,endDate:to
-  },session.token],result=>{
-    if(btn){btn.disabled=false;btn.innerHTML=btn.dataset.oldText||'📱 WA + PDF';}
-    window.open('https://wa.me/'+wa+'?text='+encodeURIComponent(buildReferralReportMessage(r,result,from,to)),'_blank','noopener');
-  },e=>{
-    if(btn){btn.disabled=false;btn.innerHTML=btn.dataset.oldText||'📱 WA + PDF';}
-    alert('Gagal membuat PDF: '+normalizeError(e));
-  });
+  const waWindow=window.open('about:blank','_blank');
+
+  if(!waWindow){
+    alert('Firefox memblokir popup. Izinkan popup untuk trextopup.com lalu coba lagi.');
+    return;
+  }
+
+  try{
+    waWindow.document.write(
+      '<!doctype html><html><head><title>TREX TOP UP</title></head>'+
+      '<body style="font-family:Arial;padding:30px;background:#111;color:#ffd34d">'+
+      '<h2>Sedang membuat PDF laporan...</h2>'+
+      '<p>Mohon tunggu.</p></body></html>'
+    );
+    waWindow.document.close();
+  }catch(e){}
+
+  if(btn){
+    btn.disabled=true;
+    btn.dataset.oldText=btn.innerHTML;
+    btn.innerHTML='⏳ Membuat PDF...';
+  }
+
+  callServer(
+    'generateReferralReportPdf',
+    [
+      r?.referral||'',
+      {
+        startDate:from,
+        endDate:to
+      },
+      session.token
+    ],
+    result=>{
+      if(btn){
+        btn.disabled=false;
+        btn.innerHTML=btn.dataset.oldText||'📱 WA + PDF';
+      }
+
+      const msg=buildReferralReportMessage(r,result,from,to);
+      const url='https://wa.me/'+wa+'?text='+encodeURIComponent(msg);
+
+      try{
+        waWindow.location.href=url;
+        waWindow.focus();
+      }catch(e){
+        window.location.href=url;
+      }
+    },
+    e=>{
+      if(btn){
+        btn.disabled=false;
+        btn.innerHTML=btn.dataset.oldText||'📱 WA + PDF';
+      }
+
+      try{
+        waWindow.close();
+      }catch(_){}
+
+      alert('Gagal membuat PDF: '+normalizeError(e));
+    }
+  );
 }
 
 function renderPartnerTable(rows,id,type){
