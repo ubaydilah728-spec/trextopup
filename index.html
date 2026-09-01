@@ -1574,7 +1574,7 @@ function buildResellerReportMessage(r){
   ].join('\n');
 }
 
-function sendResellerReport(r){
+function sendResellerReport(r,btn){
   const wa=String(r?.wa||'').replace(/\D/g,'');
   if(!wa){
     alert('Nomor WhatsApp reseller belum diisi di ADMIN kolom H (NO WA).');
@@ -1584,7 +1584,6 @@ function sendResellerReport(r){
   const from=document.getElementById('resFrom')?.value||'';
   const to=document.getElementById('resTo')?.value||'';
 
-  const btn=event?.currentTarget;
   if(btn){
     btn.disabled=true;
     btn.dataset.oldText=btn.innerHTML;
@@ -1677,27 +1676,95 @@ function sendReferralReport(r,btn){
 
 function renderPartnerTable(rows,id,type){
  if(!rows.length)return '<div class="empty">Tidak ada data.</div>';
+
  let cols;
  if(type==='reseller'){
-   cols=[['reseller','Reseller'],['wa','WhatsApp'],['jumlahTransaksi','Jumlah Transaksi'],['coinKeluar','Coin Keluar'],['level','Level'],['percentage','Persentase'],['commission','Komisi']];
+   cols=[
+     ['reseller','Reseller'],
+     ['wa','WhatsApp'],
+     ['jumlahTransaksi','Jumlah Transaksi'],
+     ['coinKeluar','Coin Keluar'],
+     ['level','Level'],
+     ['percentage','Persentase'],
+     ['commission','Komisi']
+   ];
+   window.__trexResellerRows = rows;
  }else if(type==='referral'){
-   cols=[['referral','Referral'],['wa','WhatsApp'],['jumlahTransaksi','Jumlah Transaksi'],['coinKeluar','Coin Keluar'],['percentage','Persentase'],['commission','Komisi']];
+   cols=[
+     ['referral','Referral'],
+     ['wa','WhatsApp'],
+     ['jumlahTransaksi','Jumlah Transaksi'],
+     ['coinKeluar','Coin Keluar'],
+     ['percentage','Persentase'],
+     ['commission','Komisi']
+   ];
+   window.__trexReferralRows = rows;
  }else{
-   cols=[['noHp','No HP'],['id','ID'],['jumlahTransaksi','Jumlah Transaksi'],['coinKeluar','Coin Keluar'],['nilaiLevel','Nilai Level'],['level','Level'],['rewardMultiplier','Reward Multiplier'],['commission','Komisi']];
+   cols=[
+     ['noHp','No HP'],
+     ['id','ID'],
+     ['jumlahTransaksi','Jumlah Transaksi'],
+     ['coinKeluar','Coin Keluar'],
+     ['nilaiLevel','Nilai Level'],
+     ['level','Level'],
+     ['rewardMultiplier','Reward Multiplier'],
+     ['commission','Komisi']
+   ];
  }
- return '<div class="tableWrap"><table id="'+id+'"><thead><tr>'+cols.map(c=>'<th>'+esc(c[1])+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+cols.map(c=>{
-   const v=r?.[c[0]] ?? '';
-   const cls=['jumlahTransaksi','coinKeluar','nilaiLevel','percentage','rewardMultiplier','commission'].includes(c[0])?'num':'';
-   if((type==='reseller'||type==='referral') && c[0]==='wa'){
-     const wa=String(r?.wa||'').replace(/\D/g,'');
-     if(!wa)return '<td><span class="waMissing">Belum diisi</span></td>';
-     const safeRow=JSON.stringify(r).replace(/&/g,'\\u0026').replace(/</g,'\\u003c').replace(/>/g,'\\u003e');
-     const fn=type==='reseller'?'sendResellerReport':'sendReferralReport';
-     return '<td><button type="button" class="waLink" onclick="'+fn+'('+safeRow+',this)">📱 WA + PDF</button></td>';
-   }
-   return '<td class="'+cls+'">'+esc(formatValue(v,c[0]))+'</td>';
- }).join('')+'</tr>').join('')+'</tbody></table></div>';
-}function loadNote2(){
+
+ return '<div class="tableWrap"><table id="'+id+'"><thead><tr>'+
+   cols.map(c=>'<th>'+esc(c[1])+'</th>').join('')+
+   '</tr></thead><tbody>'+
+   rows.map(function(r,rowIndex){
+     return '<tr>'+cols.map(function(c){
+       const v=r?.[c[0]] ?? '';
+       const cls=['jumlahTransaksi','coinKeluar','nilaiLevel','percentage','rewardMultiplier','commission'].includes(c[0])?'num':'';
+
+       if((type==='reseller'||type==='referral') && c[0]==='wa'){
+         const wa=String(r?.wa||'').replace(/\D/g,'');
+         if(!wa){
+           return '<td><span class="waMissing">Belum diisi</span></td>';
+         }
+
+         const fn=type==='reseller'
+           ? 'sendResellerReportByIndex'
+           : 'sendReferralReportByIndex';
+
+         return '<td>'+
+           '<button type="button" class="waLink" '+
+           'onclick="'+fn+'('+rowIndex+',this)">'+
+           '📱 WA + PDF'+
+           '</button>'+
+         '</td>';
+       }
+
+       return '<td class="'+cls+'">'+
+         esc(formatValue(v,c[0]))+
+       '</td>';
+     }).join('')+'</tr>';
+   }).join('')+
+   '</tbody></table></div>';
+}
+
+function sendResellerReportByIndex(index,btn){
+  const row=window.__trexResellerRows?.[index];
+  if(!row){
+    alert('Data reseller tidak ditemukan. Silakan Refresh.');
+    return;
+  }
+  sendResellerReport(row,btn);
+}
+
+function sendReferralReportByIndex(index,btn){
+  const row=window.__trexReferralRows?.[index];
+  if(!row){
+    alert('Data referral tidak ditemukan. Silakan Refresh.');
+    return;
+  }
+  sendReferralReport(row,btn);
+}
+
+function loadNote2(){
  if(!isAdmin()){showError('Akses ditolak.');return}
  const hp=document.getElementById('noteHp')?.value?.trim()||'';
  const id=document.getElementById('noteId')?.value?.trim()||'';
