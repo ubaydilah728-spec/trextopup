@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-
+<title>TREX TOP UP • PRO</title>
 <style>
 /* ===== TREX TOP UP PRO THEME — visual only, backend untouched ===== */
 :root{
@@ -710,31 +710,70 @@ td.num{text-align:center}
 }
 .waMissing{color:#777;font-size:12px}
 
-.fastResponseBadge{
-  text-align:center;
-  margin:-14px 0 20px;
-  color:#ffd966;
+.specialCommissionGrid{
+  display:grid;
+  grid-template-columns:1.1fr 1.5fr .8fr .9fr;
+  gap:12px;
+  align-items:end;
+}
+.specialCommissionCard{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px;
+  background:
+    radial-gradient(circle at 100% 0,rgba(245,197,66,.10),transparent 38%),
+    linear-gradient(145deg,#151515,#0b0b0b);
+}
+.specialCommissionCard h3{
+  margin:0 0 6px;
+  color:var(--gold-bright);
+}
+.specialCommissionHint{
+  color:#8b9298;
   font-size:12px;
+  margin:0 0 16px;
+}
+.specialCommissionActions{
+  display:flex;
+  gap:10px;
+  margin-top:16px;
+  flex-wrap:wrap;
+}
+.specialCommissionTableWrap{margin-top:18px}
+.specialCommissionMode{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:11px;
   font-weight:900;
-  letter-spacing:1.1px;
-  text-transform:uppercase;
+}
+.specialCommissionMode.active{
+  background:rgba(245,197,66,.12);
+  color:var(--gold-bright);
+  border:1px solid rgba(245,197,66,.25);
+}
+.specialCommissionMode.off{
+  background:rgba(255,255,255,.04);
+  color:#888;
+  border:1px solid rgba(255,255,255,.08);
+}
+.specialCommissionRule{
+  margin-top:14px;
+  padding:12px 14px;
+  border-left:3px solid var(--gold);
+  background:rgba(245,197,66,.035);
+  color:#c9c9c9;
+  border-radius:0 9px 9px 0;
+  font-size:12px;
+  line-height:1.55;
+}
+@media(max-width:900px){
+  .specialCommissionGrid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  .specialCommissionGrid{grid-template-columns:1fr}
 }
 </style>
-<title>TREX TOP UP • Fast Response 24JAM</title>
-<meta name="description" content="TREX TOP UP • Fast Response 24JAM. Layanan top up coin cepat dan responsif.">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="TREX TOP UP">
-<meta property="og:title" content="TREX TOP UP • Fast Response 24JAM">
-<meta property="og:description" content="TREX TOP UP • Fast Response 24JAM. Layanan top up coin cepat dan responsif.">
-<meta property="og:url" content="https://trextopup.com/">
-<meta property="og:image" content="https://trextopup.com/logo-trex.jpg">
-<meta property="og:image:type" content="image/jpeg">
-<meta property="og:image:alt" content="TREX TOP UP • Fast Response 24JAM">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="TREX TOP UP • Fast Response 24JAM">
-<meta name="twitter:description" content="TREX TOP UP • Fast Response 24JAM. Layanan top up coin cepat dan responsif.">
-<meta name="twitter:image" content="https://trextopup.com/logo-trex.jpg">
-<link rel="icon" type="image/jpeg" href="https://trextopup.com/logo-trex.jpg">
 </head>
 <body>
 
@@ -905,6 +944,7 @@ function buildNav(){
     html+=navBtn('reseller','👥','Reseller');
     html+=navBtn('referral','🔗','Referral');
     html+=navBtn('note2','☎️','Note 2');
+    html+=navBtn('specialCommission','💰','Komisi Khusus');
   }else if(isReseller()){
     html+=navBtn('home','🏠','Beranda');
     html+=navBtn('transactions','📊','Transaksi Saya');
@@ -969,6 +1009,8 @@ function openPage(page){
     loadReferral();
   }else if(page==='note2'){
     loadNote2();
+  }else if(page==='specialCommission'){
+    loadSpecialCommission();
   }
 }
 
@@ -1121,31 +1163,48 @@ function loadUserHome(){
 /* ---------------- PARTNER HOME ---------------- */
 function loadPartnerHome(){
   if(isAdmin()){openPage('transactions');return}
+
   const p=document.getElementById('page');
   const roleLabel=isReseller()?'RESELLER':'REFERRAL';
-  p.innerHTML='<div class="partnerHome"><div class="partnerHomeInner"><div class="partnerLoading">Memuat akun...</div></div></div>';
 
-  const fn=isReseller()?'getResellerData':'getReferralData';
-  // Ringkasan utama dirender segera setelah data akun tersedia.
-  callServer(fn,[{},session.token],data=>{
-    const rows=Array.isArray(data)?data:(data?.data||[]);
-    let item=null;
-    if(isReseller()){
-      item=rows.find(r=>String(r?.reseller||'').trim().toUpperCase()===String(session.username||'').trim().toUpperCase()) || null;
-    }else{
-      item=rows.find(r=>String(r?.referral||'').trim().toUpperCase()===String(session.username||'').trim().toUpperCase()) || null;
-    }
-    if(!item){
-      p.innerHTML='<div class="partnerHome"><div class="partnerHomeInner"><div class="alert err">Data akun '+esc(session.username||'')+' belum ditemukan.</div></div></div>';
-      return;
-    }
+  p.innerHTML=
+    '<div class="partnerHome"><div class="partnerHomeInner">'+
+      '<div class="partnerLoading">Memuat akun...</div>'+
+    '</div></div>';
 
-    renderPartnerHome(item,roleLabel);
-    // Grafik/performa dimuat terpisah agar kartu utama tidak menunggu transaksi.
-    loadPartnerPerformance();
-  },e=>{
-    p.innerHTML='<div class="partnerHome"><div class="partnerHomeInner"><div class="alert err">Gagal memuat akun: '+esc(normalizeError(e))+'</div></div></div>';
-  });
+  // Endpoint khusus untuk login: hanya membaca 1 baris summary akun.
+  callServer(
+    'getPartnerHomeFast',
+    [session.token],
+    data=>{
+      data=data||{};
+
+      renderPartnerHome({
+        reseller:data.role==='RESELLER'
+          ? data.account
+          : '',
+        referral:data.role==='REFERRAL'
+          ? data.account
+          : '',
+        coinKeluar:data.coinKeluar||0,
+        commission:data.commission||0,
+        level:data.level||'',
+        multiplier:data.multiplier||0,
+        mode:data.mode||'NORMAL',
+        jumlahTransaksi:data.jumlahTransaksi||0
+      },roleLabel);
+
+      // Performa/grafik tetap dimuat terpisah agar kartu utama cepat tampil.
+      setTimeout(loadPartnerPerformance,0);
+    },
+    e=>{
+      p.innerHTML=
+        '<div class="partnerHome"><div class="partnerHomeInner">'+
+          '<div class="alert err">Gagal memuat akun: '+
+          esc(normalizeError(e))+
+          '</div></div></div>';
+    }
+  );
 }
 function renderPartnerHome(item,roleLabel){
   item=item||{};
@@ -1873,6 +1932,250 @@ function sendReferralReportByIndex(index,btn){
     return;
   }
   sendReferralReport(row,btn);
+}
+
+
+function loadSpecialCommission(){
+  if(!isAdmin())return;
+
+  const p=document.getElementById('page');
+  const title=document.getElementById('pageTitle');
+  const subtitle=document.getElementById('pageSubtitle');
+
+  if(title)title.textContent='Komisi Khusus';
+  if(subtitle)subtitle.textContent='Atur multiplier khusus untuk Reseller atau User tertentu.';
+
+  p.innerHTML=
+    '<div class="specialCommissionCard">'+
+      '<h3>Pengaturan Komisi</h3>'+
+      '<p class="specialCommissionHint">'+
+        'Normal mengikuti tabel level. Khusus menimpa multiplier normal hanya untuk akun yang dipilih.'+
+      '</p>'+
+      '<div class="specialCommissionGrid">'+
+        '<div class="field"><label>Role</label>'+
+          '<select id="scRole">'+
+            '<option value="RESELLER">RESELLER</option>'+
+            '<option value="USER">USER</option>'+
+          '</select>'+
+        '</div>'+
+        '<div class="field"><label>Akun / Username / No HP</label>'+
+          '<input id="scAccount" placeholder="Contoh: REX976006 atau 8122131123">'+
+        '</div>'+
+        '<div class="field"><label>Multiplier Khusus</label>'+
+          '<input id="scMultiplier" type="number" min="0.1" step="0.1" placeholder="Contoh: 6">'+
+        '</div>'+
+        '<div class="field"><label>Status</label>'+
+          '<select id="scStatus">'+
+            '<option value="AKTIF">AKTIF</option>'+
+            '<option value="NONAKTIF">NONAKTIF</option>'+
+          '</select>'+
+        '</div>'+
+      '</div>'+
+      '<div class="field" style="margin-top:12px">'+
+        '<label>Catatan (opsional)</label>'+
+        '<input id="scNote" placeholder="Contoh: Komisi khusus September">'+
+      '</div>'+
+      '<div class="specialCommissionActions">'+
+        '<button class="btn primary" onclick="saveSpecialCommissionUI()">💾 Simpan</button>'+
+        '<button class="btn" onclick="loadSpecialCommission()">↻ Refresh</button>'+
+      '</div>'+
+      '<div class="specialCommissionRule">'+
+        'Contoh: Coin 417.300 × multiplier 4 = 1.669.200 (NORMAL). '+
+        'Jika akun diberi multiplier khusus 6, maka 417.300 × 6 = 2.503.800.'+
+      '</div>'+
+    '</div>'+
+    '<div class="specialCommissionCard specialCommissionTableWrap">'+
+      '<h3>Daftar Komisi Khusus</h3>'+
+      '<div id="specialCommissionList" class="loading">Memuat...</div>'+
+    '</div>';
+
+  loadSpecialCommissionDataUI();
+}
+
+function loadSpecialCommissionDataUI(){
+  callServer(
+    'getSpecialCommissionData',
+    [session.token],
+    rows=>{
+      const box=document.getElementById('specialCommissionList');
+      if(!box)return;
+
+      rows=Array.isArray(rows)?rows:[];
+
+      if(!rows.length){
+        box.innerHTML='<div class="empty">Belum ada komisi khusus.</div>';
+        return;
+      }
+
+      window.__specialCommissionRows=rows;
+      box.innerHTML='<div class="tableWrap"><table><thead><tr>'+
+        '<th>Role</th>'+
+        '<th>Akun</th>'+
+        '<th>Multiplier</th>'+
+        '<th>Status</th>'+
+        '<th>Catatan</th>'+
+        '<th>Aksi</th>'+
+        '</tr></thead><tbody>'+
+        rows.map((r,idx)=>{
+          const active=String(r.status||'').toUpperCase()==='AKTIF';
+          const action=active
+            ? '<button class="btn" onclick="disableSpecialCommissionByIndex('+idx+')">Nonaktifkan</button>'
+            : '<span style="color:#777">Nonaktif</span>';
+
+          return '<tr>'+
+            '<td>'+esc(r.role||'-')+'</td>'+
+            '<td>'+esc(r.account||'-')+'</td>'+
+            '<td class="num">'+fmtNumber(r.multiplier||0)+'</td>'+
+            '<td><span class="specialCommissionMode '+(active?'active':'off')+'">'+
+              esc(active?'AKTIF':'NONAKTIF')+
+            '</span></td>'+
+            '<td>'+esc(r.note||'')+'</td>'+
+            '<td>'+action+'</td>'+
+          '</tr>';
+        }).join('')+
+        '</tbody></table></div>';
+    },
+    e=>{
+      const box=document.getElementById('specialCommissionList');
+      if(box)box.innerHTML='<div class="alert err">'+esc(normalizeError(e))+'</div>';
+    }
+  );
+}
+
+function saveSpecialCommissionUI(){
+  const role=document.getElementById('scRole')?.value||'';
+  const account=document.getElementById('scAccount')?.value.trim()||'';
+  const multiplier=document.getElementById('scMultiplier')?.value||'';
+  const status=document.getElementById('scStatus')?.value||'AKTIF';
+  const note=document.getElementById('scNote')?.value.trim()||'';
+
+  if(!account || !multiplier){
+    alert('Akun dan multiplier wajib diisi.');
+    return;
+  }
+
+  callServer(
+    'saveSpecialCommission',
+    [role,account,Number(multiplier),status,note,session.token],
+    res=>{
+      if(!res?.success){
+        alert(res?.message||'Gagal menyimpan.');
+        return;
+      }
+
+      alert(
+        'Berhasil disimpan.\\n'+
+        role+' '+account+
+        ' → multiplier '+res.multiplier+
+        ' ('+res.mode+')'
+      );
+
+      document.getElementById('scAccount').value='';
+      document.getElementById('scMultiplier').value='';
+      document.getElementById('scNote').value='';
+      loadSpecialCommissionDataUI();
+    },
+    e=>alert('Gagal menyimpan: '+normalizeError(e))
+  );
+}
+
+function disableSpecialCommissionByIndex(index){
+  const row=window.__specialCommissionRows?.[index];
+  if(!row)return;
+  disableSpecialCommissionUI(row.role,row.account);
+}
+
+function disableSpecialCommissionUI(role,account){
+  if(!confirm('Nonaktifkan komisi khusus untuk '+account+'?'))return;
+
+  callServer(
+    'disableSpecialCommission',
+    [role,account,session.token],
+    res=>{
+      if(!res?.success){
+        alert(res?.message||'Gagal menonaktifkan.');
+        return;
+      }
+      loadSpecialCommissionDataUI();
+    },
+    e=>alert('Gagal: '+normalizeError(e))
+  );
+}
+
+
+function loadReferral(){
+  if(!(isAdmin()||isReferral())){
+    showError('Akses ditolak.');
+    return;
+  }
+
+  document.getElementById('page').innerHTML=
+    '<div class="topbar">'+
+      '<div><h1>Referral</h1>'+
+      '<div class="subtitle">Komisi berdasarkan akumulasi Coin Keluar</div></div>'+
+      '<button class="btn btnGold" onclick="loadReferral()">↻ Refresh</button>'+
+    '</div>'+
+    '<div class="panel">'+
+      '<div class="filters">'+
+        '<input id="refFilter" placeholder="'+
+          (isReferral()?'Data referral saya':'Filter referral')+
+        '">'+
+        '<input id="refFrom" type="date">'+
+        '<input id="refTo" type="date">'+
+      '</div>'+
+      '<div class="actions">'+
+        '<button class="btn btnGold" onclick="loadReferral()">Tampilkan</button>'+
+        '<button class="btn" onclick="document.getElementById(\'refFilter\').value=\'\';loadReferral()">Reset</button>'+
+        '<button class="btn" onclick="exportCSV(\'refTable\')">CSV</button>'+
+        '<button class="btn" onclick="exportExcel(\'refTable\')">Excel</button>'+
+        '<button class="btn" onclick="window.print()">PDF / Print</button>'+
+      '</div>'+
+      '<div id="refWrap" class="loading">Memuat referral...</div>'+
+    '</div>';
+
+  const filters={
+    referral:document.getElementById('refFilter')?.value||'',
+    startDate:document.getElementById('refFrom')?.value||'',
+    endDate:document.getElementById('refTo')?.value||''
+  };
+
+  callServer(
+    'getReferralData',
+    [filters,session.token],
+    data=>{
+      const rows=Array.isArray(data)?data:[];
+      document.getElementById('refWrap').innerHTML=
+        '<div class="tableWrap">'+
+          '<table id="refTable">'+
+            '<thead><tr>'+
+              '<th>Referral</th>'+
+              '<th>WhatsApp</th>'+
+              '<th>Jumlah Transaksi</th>'+
+              '<th>Coin Keluar</th>'+
+              '<th>Komisi</th>'+
+            '</tr></thead>'+
+            '<tbody>'+
+            (rows.length
+              ? rows.map((r,i)=>
+                  '<tr>'+
+                    '<td>'+esc(r.referral||'-')+'</td>'+
+                    '<td>'+(
+                      r.wa
+                        ? '<span class="waLink">📱 '+esc(formatWhatsAppDisplay(r.wa))+'</span>'
+                        : '<span class="waMissing">Belum diisi</span>'
+                    )+'</td>'+
+                    '<td class="num">'+fmtNumber(r.jumlahTransaksi||0)+'</td>'+
+                    '<td class="num">'+fmtNumber(r.coinKeluar||0)+'</td>'+
+                    '<td class="num">'+fmtNumber(r.commission||0)+'</td>'+
+                  '</tr>'
+                ).join('')
+              : '<tr><td colspan="5" class="empty">Tidak ada data referral.</td></tr>')+
+            '</tbody>'+
+          '</table>'+
+        '</div>';
+    },
+    e=>showError('Gagal memuat referral: '+normalizeError(e))
+  );
 }
 
 function loadNote2(){
