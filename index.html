@@ -1592,11 +1592,14 @@ function sendResellerReport(r,btn){
 
   callServer(
     'generateResellerReportPdf',
-    [{
-      reseller:r?.reseller||'',
-      startDate:from,
-      endDate:to
-    },session.token],
+    [
+      r?.reseller||'',
+      {
+        startDate:from,
+        endDate:to
+      },
+      session.token
+    ],
     result=>{
       if(btn){
         btn.disabled=false;
