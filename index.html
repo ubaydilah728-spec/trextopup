@@ -690,6 +690,25 @@ td.num{text-align:center}
 .perfTable tbody tr:hover{background:rgba(255,193,7,.03)}
 .perfTable tfoot td{border-top:1px solid rgba(255,193,7,.25);border-bottom:0;color:#f4be18;background:rgba(255,193,7,.05)}
 .perfGraphTitle{margin:22px 0 10px;font-weight:700;color:#f4be18}
+
+.waLink{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:7px 10px;
+  border-radius:8px;
+  border:1px solid rgba(37,211,102,.40);
+  background:rgba(37,211,102,.08);
+  color:#8ff3ae;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+}
+.waLink:hover{
+  background:rgba(37,211,102,.16);
+  border-color:rgba(37,211,102,.68);
+}
+.waMissing{color:#777;font-size:12px}
 </style>
 </head>
 <body>
@@ -1525,6 +1544,100 @@ function renderReseller(data){
  <div class="actions"><button class="btn btnGold" onclick="loadReseller()">Tampilkan</button><button class="btn" onclick="document.getElementById('resFilter').value='';loadReseller()">Reset</button><button class="btn" onclick="exportCSV('resTable')">CSV</button><button class="btn" onclick="exportExcel('resTable')">Excel</button><button class="btn" onclick="window.print()">PDF / Print</button></div>
  <div id="resWrap">${renderPartnerTable(rows,'resTable','reseller')}</div></div>`;
 }
+
+function formatWhatsAppDisplay(wa){
+  const s=String(wa||'').replace(/\D/g,'');
+  if(!s)return '';
+  return s.startsWith('62') ? '0'+s.slice(2) : s;
+}
+
+function buildResellerReportMessage(r){
+  const from=document.getElementById('resFrom')?.value||'';
+  const to=document.getElementById('resTo')?.value||'';
+  const periode=(from||to)
+    ? ((from||'awal')+' s/d '+(to||'sekarang'))
+    : 'periode data saat ini';
+
+  return [
+    '📊 LAPORAN RESELLER TREX TOP UP',
+    '',
+    'Reseller : '+(r?.reseller||'-'),
+    'Periode  : '+periode,
+    '',
+    'Jumlah Transaksi : '+fmtNumber(r?.jumlahTransaksi||0),
+    'Coin Keluar      : '+fmtNumber(r?.coinKeluar||0),
+    'Level            : '+(r?.level||'-'),
+    'Persentase       : '+formatValue(r?.percentage ?? r?.multiplier ?? 0,'percentage'),
+    'Komisi           : '+fmtNumber(r?.commission||0),
+    '',
+    'Terima kasih.'
+  ].join('\n');
+}
+
+function sendResellerReport(r){
+  const wa=String(r?.wa||'').replace(/\D/g,'');
+  if(!wa){
+    alert('Nomor WhatsApp reseller belum diisi di ADMIN kolom G (NO WA).');
+    return;
+  }
+
+  const from=document.getElementById('resFrom')?.value||'';
+  const to=document.getElementById('resTo')?.value||'';
+
+  const btn=event?.currentTarget;
+  if(btn){
+    btn.disabled=true;
+    btn.dataset.oldText=btn.innerHTML;
+    btn.innerHTML='⏳ Membuat PDF...';
+  }
+
+  callServer(
+    'generateResellerReportPdf',
+    [{
+      reseller:r?.reseller||'',
+      startDate:from,
+      endDate:to
+    },session.token],
+    result=>{
+      if(btn){
+        btn.disabled=false;
+        btn.innerHTML=btn.dataset.oldText||'📱 WA + PDF';
+      }
+
+      const msg=[
+        '📊 LAPORAN RESELLER TREX TOP UP',
+        '',
+        'Reseller : '+(result?.reseller||r?.reseller||'-'),
+        'Periode  : '+(result?.period||'Periode data saat ini'),
+        '',
+        'Jumlah Transaksi : '+fmtNumber(result?.jumlahTransaksi||0),
+        'Coin Keluar      : '+fmtNumber(result?.coinKeluar||0),
+        'Level            : '+(result?.level||'-'),
+        'Persentase       : '+formatValue(result?.percentage||0,'percentage'),
+        'Komisi           : '+fmtNumber(result?.commission||0),
+        '',
+        '📄 PDF Laporan:',
+        result?.pdfUrl||'',
+        '',
+        'Terima kasih.'
+      ].join('\n');
+
+      window.open(
+        'https://wa.me/'+wa+'?text='+encodeURIComponent(msg),
+        '_blank',
+        'noopener'
+      );
+    },
+    e=>{
+      if(btn){
+        btn.disabled=false;
+        btn.innerHTML=btn.dataset.oldText||'📱 WA + PDF';
+      }
+      alert('Gagal membuat PDF: '+normalizeError(e));
+    }
+  );
+}
+
 function renderPartnerTable(rows,id,type){
  if(!rows.length)return '<div class="empty">Tidak ada data.</div>';
 
@@ -1532,6 +1645,7 @@ function renderPartnerTable(rows,id,type){
  if(type==='reseller'){
    cols=[
      ['reseller','Reseller'],
+     ['wa','WhatsApp'],
      ['jumlahTransaksi','Jumlah Transaksi'],
      ['coinKeluar','Coin Keluar'],
      ['level','Level'],
@@ -1565,6 +1679,25 @@ function renderPartnerTable(rows,id,type){
    rows.map(r=>'<tr>'+cols.map(c=>{
      const v=r?.[c[0]] ?? '';
      const cls=['jumlahTransaksi','coinKeluar','nilaiLevel','percentage','rewardMultiplier','commission'].includes(c[0])?'num':'';
+
+     if(type==='reseller' && c[0]==='wa'){
+       const wa=String(r?.wa||'').replace(/\D/g,'');
+       if(!wa){
+         return '<td><span class="waMissing">Belum diisi</span></td>';
+       }
+
+       const safeRow=JSON.stringify(r)
+         .replace(/&/g,'\\u0026')
+         .replace(/</g,'\\u003c')
+         .replace(/>/g,'\\u003e');
+
+       return '<td>'+
+         '<button type="button" class="waLink" onclick="sendResellerReport('+safeRow+')">📱 '+
+         esc(formatWhatsAppDisplay(wa))+
+         '</button>'+
+       '</td>';
+     }
+
      return '<td class="'+cls+'">'+esc(formatValue(v,c[0]))+'</td>';
    }).join('')+'</tr>').join('')+
    '</tbody></table></div>';
