@@ -2139,7 +2139,9 @@ function loadReferral(){
     return;
   }
 
-  document.getElementById('page').innerHTML=
+  const page=document.getElementById('page');
+
+  page.innerHTML=
     '<div class="topbar">'+
       '<div><h1>Referral</h1>'+
       '<div class="subtitle">Komisi berdasarkan akumulasi Coin Keluar</div></div>'+
@@ -2154,8 +2156,8 @@ function loadReferral(){
         '<input id="refTo" type="date">'+
       '</div>'+
       '<div class="actions">'+
-        '<button class="btn btnGold" onclick="loadReferral()">Tampilkan</button>'+
-        '<button class="btn" onclick="document.getElementById(\'refFilter\').value=\'\';loadReferral()">Reset</button>'+
+        '<button class="btn btnGold" onclick="applyReferralFilterFast()">Tampilkan</button>'+
+        '<button class="btn" onclick="resetReferralFilterFast()">Reset</button>'+
         '<button class="btn" onclick="exportCSV(\'refTable\')">CSV</button>'+
         '<button class="btn" onclick="exportExcel(\'refTable\')">Excel</button>'+
         '<button class="btn" onclick="window.print()">PDF / Print</button>'+
@@ -2163,49 +2165,76 @@ function loadReferral(){
       '<div id="refWrap" class="loading">Memuat referral...</div>'+
     '</div>';
 
+  applyReferralFilterFast();
+}
+
+function applyReferralFilterFast(){
+  const box=document.getElementById('refWrap');
+  if(!box)return;
+
   const filters={
     referral:document.getElementById('refFilter')?.value||'',
     startDate:document.getElementById('refFrom')?.value||'',
     endDate:document.getElementById('refTo')?.value||''
   };
 
+  box.innerHTML='<div class="loading">Memuat referral...</div>';
+
   callServer(
     'getReferralData',
     [filters,session.token],
     data=>{
-      const rows=Array.isArray(data)?data:[];
-      document.getElementById('refWrap').innerHTML=
-        '<div class="tableWrap">'+
-          '<table id="refTable">'+
-            '<thead><tr>'+
-              '<th>Referral</th>'+
-              '<th>WhatsApp</th>'+
-              '<th>Jumlah Transaksi</th>'+
-              '<th>Coin Keluar</th>'+
-              '<th>Komisi</th>'+
-            '</tr></thead>'+
-            '<tbody>'+
-            (rows.length
-              ? rows.map((r,i)=>
-                  '<tr>'+
-                    '<td>'+esc(r.referral||'-')+'</td>'+
-                    '<td>'+(
-                      r.wa
-                        ? '<span class="waLink">📱 '+esc(formatWhatsAppDisplay(r.wa))+'</span>'
-                        : '<span class="waMissing">Belum diisi</span>'
-                    )+'</td>'+
-                    '<td class="num">'+fmtNumber(r.jumlahTransaksi||0)+'</td>'+
-                    '<td class="num">'+fmtNumber(r.coinKeluar||0)+'</td>'+
-                    '<td class="num">'+fmtNumber(r.commission||0)+'</td>'+
-                  '</tr>'
-                ).join('')
-              : '<tr><td colspan="5" class="empty">Tidak ada data referral.</td></tr>')+
-            '</tbody>'+
-          '</table>'+
-        '</div>';
+      const rows=Array.isArray(data)?data:((data&&data.data)||[]);
+      window.__trexReferralRows=rows;
+
+      let out=
+        '<div class="tableWrap"><table id="refTable">'+
+        '<thead><tr>'+
+          '<th>Referral</th>'+
+          '<th>WhatsApp</th>'+
+          '<th>Jumlah Transaksi</th>'+
+          '<th>Coin Keluar</th>'+
+          '<th>Komisi</th>'+
+        '</tr></thead><tbody>';
+
+      if(!rows.length){
+        out+='<tr><td colspan="5" class="empty">Tidak ada data referral.</td></tr>';
+      }else{
+        rows.forEach(function(r,i){
+          const wa=String(r?.wa||'').replace(/\D/g,'');
+
+          out+='<tr>'+
+            '<td>'+esc(r?.referral||'-')+'</td>'+
+            '<td>'+
+              (wa
+                ? '<button type="button" class="waLink" onclick="sendReferralReportByIndex('+i+',this)">📱 WA + PDF</button>'
+                : '<span class="waMissing">Belum diisi</span>')+
+            '</td>'+
+            '<td class="num">'+fmtNumber(r?.jumlahTransaksi||0)+'</td>'+
+            '<td class="num">'+fmtNumber(r?.coinKeluar||0)+'</td>'+
+            '<td class="num">'+fmtNumber(r?.commission||0)+'</td>'+
+          '</tr>';
+        });
+      }
+
+      out+='</tbody></table></div>';
+      box.innerHTML=out;
     },
-    e=>showError('Gagal memuat referral: '+normalizeError(e))
+    e=>{
+      box.innerHTML=
+        '<div class="alert err">Gagal memuat referral: '+
+        esc(normalizeError(e))+
+        '</div>';
+    }
   );
+}
+
+function resetReferralFilterFast(){
+  ['refFilter','refFrom','refTo'].forEach(function(id){
+    const el=document.getElementById(id);
+    if(el)el.value='';
+  });
+  applyReferralFilterFast();
 }
 
 function loadNote2(){
