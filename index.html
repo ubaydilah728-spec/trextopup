@@ -1,9 +1,39 @@
 <!DOCTYPE html>
 <html lang="id">
-<head>
+<head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TREX TOP UP • Fast Response 24JAM</title>
+<meta name="description" content="TREX TOP UP • Fast Response 24JAM. Layanan top up coin cepat dan responsif.">
+<meta name="theme-color" content="#050505">
+
+<!-- WhatsApp / Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TREX TOP UP">
+<meta property="og:title" content="TREX TOP UP • Fast Response 24JAM">
+<meta property="og:description" content="Layanan top up coin cepat dan responsif.">
+<meta property="og:url" content="https://trextopup.com/">
+<meta property="og:image" content="https://trextopup.com/logo-trex.jpg">
+<meta property="og:image:secure_url" content="https://trextopup.com/logo-trex.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1000">
+<meta property="og:image:height" content="1000">
+<meta property="og:image:alt" content="TREX TOP UP">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TREX TOP UP • Fast Response 24JAM">
+<meta name="twitter:description" content="Layanan top up coin cepat dan responsif.">
+<meta name="twitter:image" content="https://trextopup.com/logo-trex.jpg">
+
+<link rel="icon" type="image/jpeg" href="https://trextopup.com/logo-trex.jpg">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TREX TOP UP • PRO</title>
+<meta name="description" content="TREX TOP UP • Fast Response 24JAM. Layanan top up coin cepat dan responsif.">
+<meta name="theme-color" content="#050505">
+<link rel="icon" type="image/jpeg" href="https://trextopup.com/logo-trex.jpg">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
 /* ===== TREX TOP UP PRO THEME — visual only, backend untouched ===== */
 :root{
@@ -2109,9 +2139,7 @@ function loadReferral(){
     return;
   }
 
-  const page=document.getElementById('page');
-
-  page.innerHTML=
+  document.getElementById('page').innerHTML=
     '<div class="topbar">'+
       '<div><h1>Referral</h1>'+
       '<div class="subtitle">Komisi berdasarkan akumulasi Coin Keluar</div></div>'+
@@ -2126,8 +2154,8 @@ function loadReferral(){
         '<input id="refTo" type="date">'+
       '</div>'+
       '<div class="actions">'+
-        '<button class="btn btnGold" onclick="applyReferralFilterFast()">Tampilkan</button>'+
-        '<button class="btn" onclick="resetReferralFilterFast()">Reset</button>'+
+        '<button class="btn btnGold" onclick="loadReferral()">Tampilkan</button>'+
+        '<button class="btn" onclick="document.getElementById(\'refFilter\').value=\'\';loadReferral()">Reset</button>'+
         '<button class="btn" onclick="exportCSV(\'refTable\')">CSV</button>'+
         '<button class="btn" onclick="exportExcel(\'refTable\')">Excel</button>'+
         '<button class="btn" onclick="window.print()">PDF / Print</button>'+
@@ -2135,85 +2163,49 @@ function loadReferral(){
       '<div id="refWrap" class="loading">Memuat referral...</div>'+
     '</div>';
 
-  applyReferralFilterFast();
-}
-
-function applyReferralFilterFast(){
-  const box=document.getElementById('refWrap');
-  if(!box)return;
-
   const filters={
     referral:document.getElementById('refFilter')?.value||'',
     startDate:document.getElementById('refFrom')?.value||'',
     endDate:document.getElementById('refTo')?.value||''
   };
 
-  box.innerHTML='<div class="loading">Memuat referral...</div>';
-
   callServer(
     'getReferralData',
     [filters,session.token],
     data=>{
-      const rows=Array.isArray(data)?data:((data&&data.data)||[]);
-      window.__trexReferralRows=rows;
-
-      let html=
-        '<div class="tableWrap"><table id="refTable">'+
-        '<thead><tr>'+
-          '<th>Referral</th>'+
-          '<th>WhatsApp</th>'+
-          '<th>Jumlah Transaksi</th>'+
-          '<th>Coin Keluar</th>'+
-          '<th>Komisi</th>'+
-        '</tr></thead><tbody>';
-
-      if(!rows.length){
-        html+='<tr><td colspan="5" class="empty">Tidak ada data referral.</td></tr>';
-      }else{
-        rows.forEach(function(r,i){
-          const wa=String(r?.wa||'').replace(/\D/g,'');
-
-          html+=
-            '<tr>'+
-              '<td>'+esc(r?.referral||'-')+'</td>'+
-              '<td>'+
-                (wa
-                  ? '<button type="button" class="waLink" onclick="sendReferralReportByIndex('+i+',this)">📱 WA + PDF</button>'
-                  : '<span class="waMissing">Belum diisi</span>')+
-              '</td>'+
-              '<td class="num">'+fmtNumber(r?.jumlahTransaksi||0)+'</td>'+
-              '<td class="num">'+fmtNumber(r?.coinKeluar||0)+'</td>'+
-              '<td class="num">'+fmtNumber(r?.commission||0)+'</td>'+
-            '</tr>';
-        });
-      }
-
-      html+='</tbody></table></div>';
-      box.innerHTML=html;
+      const rows=Array.isArray(data)?data:[];
+      document.getElementById('refWrap').innerHTML=
+        '<div class="tableWrap">'+
+          '<table id="refTable">'+
+            '<thead><tr>'+
+              '<th>Referral</th>'+
+              '<th>WhatsApp</th>'+
+              '<th>Jumlah Transaksi</th>'+
+              '<th>Coin Keluar</th>'+
+              '<th>Komisi</th>'+
+            '</tr></thead>'+
+            '<tbody>'+
+            (rows.length
+              ? rows.map((r,i)=>
+                  '<tr>'+
+                    '<td>'+esc(r.referral||'-')+'</td>'+
+                    '<td>'+(
+                      r.wa
+                        ? '<span class="waLink">📱 '+esc(formatWhatsAppDisplay(r.wa))+'</span>'
+                        : '<span class="waMissing">Belum diisi</span>'
+                    )+'</td>'+
+                    '<td class="num">'+fmtNumber(r.jumlahTransaksi||0)+'</td>'+
+                    '<td class="num">'+fmtNumber(r.coinKeluar||0)+'</td>'+
+                    '<td class="num">'+fmtNumber(r.commission||0)+'</td>'+
+                  '</tr>'
+                ).join('')
+              : '<tr><td colspan="5" class="empty">Tidak ada data referral.</td></tr>')+
+            '</tbody>'+
+          '</table>'+
+        '</div>';
     },
-    e=>{
-      box.innerHTML='<div class="alert err">Gagal memuat referral: '+esc(normalizeError(e))+'</div>';
-    }
+    e=>showError('Gagal memuat referral: '+normalizeError(e))
   );
-}
-
-function resetReferralFilterFast(){
-  ['refFilter','refFrom','refTo'].forEach(function(id){
-    const el=document.getElementById(id);
-    if(el)el.value='';
-  });
-  applyReferralFilterFast();
-}
-
-function sendReferralReportByIndex(index,btn){
-  const row=window.__trexReferralRows?.[index];
-
-  if(!row){
-    alert('Data referral tidak ditemukan. Silakan Refresh.');
-    return;
-  }
-
-  sendReferralReport(row,btn);
 }
 
 function loadNote2(){
