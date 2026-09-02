@@ -1760,7 +1760,7 @@ function sendResellerReport(r,btn){
         'Terima kasih.'
       ].join('\n');
 
-      const url=buildReferralWhatsAppUrl(wa,msg);
+      const url='https://wa.me/'+wa+'?text='+encodeWhatsAppUtf8(msg);
 
       try{
         waWindow.location.href=url;
@@ -1792,28 +1792,21 @@ function buildReferralReportMessage(r,result,from,to){
 
   const commission=Number(result?.commission||0);
 
-  /*
-   * Pesan sumber sengaja ASCII-only.
-   * Emoji ditulis sebagai TOKEN, lalu saat membuat URL WhatsApp
-   * token tersebut diganti LANGSUNG menjadi byte UTF-8 percent-encoded.
-   * Tidak ada encodeURIComponent pada token emoji.
-   */
-  const E={
-    fire:'EMOJI_FIRE',
-    strong:'EMOJI_STRONG',
-    warning:'EMOJI_WARNING',
-    trex:'EMOJI_TREX',
-    money:'EMOJI_MONEY',
-    rocket:'EMOJI_ROCKET',
-    chart:'EMOJI_CHART',
-    check:'EMOJI_CHECK',
-    party:'EMOJI_PARTY',
-    paper:'EMOJI_PAPER',
-    pray:'EMOJI_PRAY'
-  };
+  // Emoji dibangkitkan saat runtime agar source tetap aman.
+  const fire=String.fromCodePoint(0x1F525);
+  const strong=String.fromCodePoint(0x1F4AA);
+  const warning=String.fromCodePoint(0x26A0,0xFE0F);
+  const trex=String.fromCodePoint(0x1F996);
+  const money=String.fromCodePoint(0x1F4B0);
+  const rocket=String.fromCodePoint(0x1F680);
+  const chart=String.fromCodePoint(0x1F4CA);
+  const check=String.fromCodePoint(0x2705);
+  const party=String.fromCodePoint(0x1F389);
+  const paper=String.fromCodePoint(0x1F4C4);
+  const pray=String.fromCodePoint(0x1F64F);
 
   const message=[
-    E.chart+' LAPORAN REFERRAL TREX TOP UP',
+    chart+' LAPORAN REFERRAL TREX TOP UP',
     '',
     'Referral : '+(result?.referral||r?.referral||'-'),
     'Periode  : '+periode,
@@ -1827,74 +1820,44 @@ function buildReferralReportMessage(r,result,from,to){
   if(commission<10000){
     message.push(
       '',
-      E.warning+' *INFORMASI KOMISI*',
+      warning+' *INFORMASI KOMISI*',
       'Komisi periode ini sebesar *'+fmtNumber(commission)+
         '* dan masih belum mencapai minimum pencairan *Rp10.000*.',
       '',
-      'Jangan berkecil hati, tetap semangat! '+E.strong+E.fire,
+      'Jangan berkecil hati, tetap semangat! '+strong+fire,
       'Setiap transaksi dan referral yang kamu dapatkan adalah langkah menuju komisi yang lebih besar.',
       '',
-      'Mari tingkatkan semangat dan aktivitas di bulan berikutnya agar target pencairan *Rp10.000* segera tercapai. '+E.rocket,
+      'Mari tingkatkan semangat dan aktivitas di bulan berikutnya agar target pencairan *Rp10.000* segera tercapai. '+rocket,
       '',
-      '*Semakin aktif, semakin besar komisinya!* '+E.money+E.fire,
+      '*Semakin aktif, semakin besar komisinya!* '+money+fire,
       '',
-      'Terima kasih atas kontribusi dan kerja samanya bersama *TREX TOP UP*. '+E.pray
+      'Terima kasih atas kontribusi dan kerja samanya bersama *TREX TOP UP*. '+pray
     );
   }else{
     message.push(
       '',
-      E.check+' *INFORMASI KOMISI*',
+      check+' *INFORMASI KOMISI*',
       'Selamat, komisi periode ini sebesar *'+fmtNumber(commission)+
-        '* dan sudah mencapai minimum pencairan *Rp10.000*. '+E.party,
+        '* dan sudah mencapai minimum pencairan *Rp10.000*. '+party,
       '',
       'Terima kasih atas kerja keras dan kontribusinya bersama *TREX TOP UP*.',
       'Tetap semangat dan terus tingkatkan aktivitas referral di bulan berikutnya.',
       '',
-      '*Semakin aktif, semakin besar peluang mendapatkan komisi yang lebih besar!* '+E.rocket+E.strong,
+      '*Semakin aktif, semakin besar peluang mendapatkan komisi yang lebih besar!* '+rocket+strong,
       '',
-      'Sukses terus bersama *TREX TOP UP*! '+E.trex+E.fire
+      'Sukses terus bersama *TREX TOP UP*! '+trex+fire
     );
   }
 
   message.push(
     '',
-    E.paper+' PDF Laporan:',
+    paper+' PDF Laporan:',
     result?.pdfUrl||'',
     '',
     'Terima kasih.'
   );
 
   return message.join('\n');
-}
-
-function buildReferralWhatsAppUrl(wa,msg){
-  const emojiBytes={
-    EMOJI_FIRE:'%F0%9F%94%A5',
-    EMOJI_STRONG:'%F0%9F%92%AA',
-    EMOJI_WARNING:'%E2%9A%A0%EF%B8%8F',
-    EMOJI_TREX:'%F0%9F%A6%96',
-    EMOJI_MONEY:'%F0%9F%92%B0',
-    EMOJI_ROCKET:'%F0%9F%9A%80',
-    EMOJI_CHART:'%F0%9F%93%8A',
-    EMOJI_CHECK:'%E2%9C%85',
-    EMOJI_PARTY:'%F0%9F%8E%89',
-    EMOJI_PAPER:'%F0%9F%93%84',
-    EMOJI_PRAY:'%F0%9F%99%8F'
-  };
-
-  const tokenRegex=/EMOJI_[A-Z]+/g;
-  const parts=String(msg||'').split(tokenRegex);
-  const tokens=String(msg||'').match(tokenRegex)||[];
-
-  let encoded='';
-  for(let i=0;i<parts.length;i++){
-    encoded+=encodeURIComponent(parts[i]);
-    if(i<tokens.length){
-      encoded+=emojiBytes[tokens[i]]||'';
-    }
-  }
-
-  return 'https://wa.me/'+wa+'?text='+encoded;
 }
 function sendReferralReport(r,btn){
   const wa=String(r?.wa||'').replace(/\D/g,'');
@@ -1946,7 +1909,11 @@ function sendReferralReport(r,btn){
       }
 
       const msg=buildReferralReportMessage(r,result,from,to);
-      const url='https://wa.me/'+wa+'?text='+encodeURIComponent(msg);
+      const encodedText=encodeURIComponent(msg);
+const isMobile=/Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
+const url=isMobile
+  ? 'https://wa.me/'+wa+'?text='+encodedText
+  : 'https://web.whatsapp.com/send?phone='+wa+'&text='+encodedText;
 
       try{
         waWindow.location.href=url;
