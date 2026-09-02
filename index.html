@@ -1793,23 +1793,22 @@ function buildReferralReportMessage(r,result,from,to){
   const commission=Number(result?.commission||0);
 
   /*
-   * Emoji dibuat saat runtime menggunakan decodeURIComponent().
-   * Source file tetap ASCII-safe sehingga emoji tidak rusak saat
-   * copy/paste/deploy, lalu encodeURIComponent() mengubahnya menjadi
-   * UTF-8 saat dikirim ke WhatsApp.
+   * Source ASCII-safe:
+   * emoji dibuat saat runtime memakai surrogate pair Unicode.
+   * Ini menghindari karakter emoji rusak saat file dipindah/deploy.
    */
   const E={
-    fire:decodeURIComponent('%F0%9F%94%A5'),
-    strong:decodeURIComponent('%F0%9F%92%AA'),
-    warning:decodeURIComponent('%E2%9A%A0%EF%B8%8F'),
-    trex:decodeURIComponent('%F0%9F%A6%96'),
-    money:decodeURIComponent('%F0%9F%92%B0'),
-    rocket:decodeURIComponent('%F0%9F%9A%80'),
-    chart:decodeURIComponent('%F0%9F%93%8A'),
-    check:decodeURIComponent('%E2%9C%85'),
-    party:decodeURIComponent('%F0%9F%8E%89'),
-    paper:decodeURIComponent('%F0%9F%93%84'),
-    pray:decodeURIComponent('%F0%9F%99%8F')
+    fire:'\uD83D\uDD25',      // 🔥
+    strong:'\uD83D\uDCAA',    // 💪
+    warning:'\u26A0\uFE0F',   // ⚠️
+    trex:'\uD83E\uDD96',      // 🦖
+    money:'\uD83D\uDCB0',     // 💰
+    rocket:'\uD83D\uDE80',    // 🚀
+    chart:'\uD83D\uDCCA',     // 📊
+    check:'\u2705',            // ✅
+    party:'\uD83C\uDF89',      // 🎉
+    paper:'\uD83D\uDCC4',      // 📄
+    pray:'\uD83D\uDE4F'        // 🙏
   };
 
   const message=[
@@ -1864,7 +1863,8 @@ function buildReferralReportMessage(r,result,from,to){
     'Terima kasih.'
   );
 
-  return message.join('\\n');
+  // PENTING: satu backslash menghasilkan newline sungguhan.
+  return message.join('\n');
 }
 function sendReferralReport(r,btn){
   const wa=String(r?.wa||'').replace(/\D/g,'');
