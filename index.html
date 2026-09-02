@@ -1760,11 +1760,7 @@ function sendResellerReport(r,btn){
         'Terima kasih.'
       ].join('\n');
 
-      const encodedText=encodeWhatsAppUtf8(msg);
-const isMobile=/Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
-const url=isMobile
-  ? 'https://wa.me/'+wa+'?text='+encodedText
-  : 'https://web.whatsapp.com/send?phone='+wa+'&text='+encodedText;
+      const url=buildReferralWhatsAppUrl(wa,msg);
 
       try{
         waWindow.location.href=url;
@@ -1797,21 +1793,23 @@ function buildReferralReportMessage(r,result,from,to){
   const commission=Number(result?.commission||0);
 
   /*
-   * Emoji tetap dibuat dari Unicode escape ASCII-safe.
-   * Contoh: \uD83D\uDD25 => 🔥 saat JavaScript dijalankan.
+   * Pesan sumber sengaja ASCII-only.
+   * Emoji ditulis sebagai TOKEN, lalu saat membuat URL WhatsApp
+   * token tersebut diganti LANGSUNG menjadi byte UTF-8 percent-encoded.
+   * Tidak ada encodeURIComponent pada token emoji.
    */
   const E={
-    fire:'\uD83D\uDD25',       // 🔥
-    strong:'\uD83D\uDCAA',     // 💪
-    warning:'\u26A0\uFE0F',    // ⚠️
-    trex:'\uD83E\uDD96',       // 🦖
-    money:'\uD83D\uDCB0',      // 💰
-    rocket:'\uD83D\uDE80',     // 🚀
-    chart:'\uD83D\uDCCA',      // 📊
-    check:'\u2705',             // ✅
-    party:'\uD83C\uDF89',       // 🎉
-    paper:'\uD83D\uDCC4',       // 📄
-    pray:'\uD83D\uDE4F'         // 🙏
+    fire:'EMOJI_FIRE',
+    strong:'EMOJI_STRONG',
+    warning:'EMOJI_WARNING',
+    trex:'EMOJI_TREX',
+    money:'EMOJI_MONEY',
+    rocket:'EMOJI_ROCKET',
+    chart:'EMOJI_CHART',
+    check:'EMOJI_CHECK',
+    party:'EMOJI_PARTY',
+    paper:'EMOJI_PAPER',
+    pray:'EMOJI_PRAY'
   };
 
   const message=[
@@ -1869,32 +1867,34 @@ function buildReferralReportMessage(r,result,from,to){
   return message.join('\n');
 }
 
-/*
- * Encode URL query dengan UTF-8 byte secara manual.
- * Ini lebih kuat untuk WhatsApp daripada bergantung pada proses
- * decoding/encoding perantara.
- */
-function encodeWhatsAppUtf8(text){
-  const bytes=new TextEncoder().encode(String(text||''));
-  let out='';
+function buildReferralWhatsAppUrl(wa,msg){
+  const emojiBytes={
+    EMOJI_FIRE:'%F0%9F%94%A5',
+    EMOJI_STRONG:'%F0%9F%92%AA',
+    EMOJI_WARNING:'%E2%9A%A0%EF%B8%8F',
+    EMOJI_TREX:'%F0%9F%A6%96',
+    EMOJI_MONEY:'%F0%9F%92%B0',
+    EMOJI_ROCKET:'%F0%9F%9A%80',
+    EMOJI_CHART:'%F0%9F%93%8A',
+    EMOJI_CHECK:'%E2%9C%85',
+    EMOJI_PARTY:'%F0%9F%8E%89',
+    EMOJI_PAPER:'%F0%9F%93%84',
+    EMOJI_PRAY:'%F0%9F%99%8F'
+  };
 
-  for(let i=0;i<bytes.length;i++){
-    const b=bytes[i];
+  const tokenRegex=/EMOJI_[A-Z]+/g;
+  const parts=String(msg||'').split(tokenRegex);
+  const tokens=String(msg||'').match(tokenRegex)||[];
 
-    // RFC 3986 unreserved: A-Z a-z 0-9 - . _ ~
-    if(
-      (b>=0x41&&b<=0x5A) ||
-      (b>=0x61&&b<=0x7A) ||
-      (b>=0x30&&b<=0x39) ||
-      b===0x2D || b===0x2E || b===0x5F || b===0x7E
-    ){
-      out+=String.fromCharCode(b);
-    }else{
-      out+='%'+b.toString(16).toUpperCase().padStart(2,'0');
+  let encoded='';
+  for(let i=0;i<parts.length;i++){
+    encoded+=encodeURIComponent(parts[i]);
+    if(i<tokens.length){
+      encoded+=emojiBytes[tokens[i]]||'';
     }
   }
 
-  return out;
+  return 'https://wa.me/'+wa+'?text='+encoded;
 }
 function sendReferralReport(r,btn){
   const wa=String(r?.wa||'').replace(/\D/g,'');
