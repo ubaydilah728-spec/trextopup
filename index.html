@@ -1786,46 +1786,59 @@ function sendResellerReport(r,btn){
 
 
 function buildReferralReportMessage(r,result,from,to){
-  const periode=(from||to)?((from||'awal')+' s/d '+(to||'sekarang')):'periode data saat ini';
+  const periode=(from||to)
+    ?((from||'awal')+' s/d '+(to||'sekarang'))
+    :'periode data saat ini';
+
   const commission=Number(result?.commission||0);
 
   const message=[
-    '📊 LAPORAN REFERRAL TREX TOP UP','',
+    '\uD83D\uDCCA LAPORAN REFERRAL TREX TOP UP',
+    '',
     'Referral : '+(result?.referral||r?.referral||'-'),
-    'Periode  : '+periode,'',
+    'Periode  : '+periode,
+    '',
     'Jumlah Transaksi : '+fmtNumber(result?.jumlahTransaksi||0),
     'Coin Keluar      : '+fmtNumber(result?.coinKeluar||0),
     'Persentase       : '+formatValue(result?.percentage||0,'percentage'),
-    'Komisi           : '+fmtNumber(commission),''
+    'Komisi           : '+fmtNumber(commission)
   ];
 
   if(commission<10000){
     message.push(
-      '⚠️ INFORMASI KOMISI',
-      'Komisi periode ini sebesar '+fmtNumber(commission)+' dan masih belum mencapai minimum pencairan Rp10.000.',
       '',
-      'Jangan berkecil hati, tetap semangat! 💪🔥',
+      '\u26A0\uFE0F *INFORMASI KOMISI*',
+      'Komisi periode ini sebesar *'+fmtNumber(commission)+
+        '* dan masih belum mencapai minimum pencairan *Rp10.000*.',
+      '',
+      'Jangan berkecil hati, tetap semangat! \uD83D\uDCAA\uD83D\uDD25',
       'Setiap transaksi dan referral yang kamu dapatkan adalah langkah menuju komisi yang lebih besar.',
-      'Mari tingkatkan semangat dan aktivitas di bulan berikutnya agar target pencairan Rp10.000 segera tercapai. 🚀',
       '',
-      'Semakin aktif, semakin besar komisinya! 💰🔥'
+      'Mari tingkatkan semangat dan aktivitas di bulan berikutnya agar target pencairan *Rp10.000* segera tercapai. \uD83D\uDE80',
+      '',
+      '*Semakin aktif, semakin besar komisinya!* \uD83D\uDCB0\uD83D\uDD25',
+      '',
+      'Terima kasih atas kontribusi dan kerja samanya bersama *TREX TOP UP*. \uD83D\uDE4F'
     );
   }else{
     message.push(
-      '✅ INFORMASI KOMISI',
-      'Selamat, komisi periode ini sebesar '+fmtNumber(commission)+' dan sudah mencapai minimum pencairan Rp10.000. 🎉',
       '',
-      'Terima kasih atas kerja keras dan kontribusinya bersama TREX TOP UP.',
+      '\u2705 *INFORMASI KOMISI*',
+      'Selamat, komisi periode ini sebesar *'+fmtNumber(commission)+
+        '* dan sudah mencapai minimum pencairan *Rp10.000*. \uD83C\uDF89',
+      '',
+      'Terima kasih atas kerja keras dan kontribusinya bersama *TREX TOP UP*.',
       'Tetap semangat dan terus tingkatkan aktivitas referral di bulan berikutnya.',
-      'Semakin aktif, semakin besar peluang mendapatkan komisi yang lebih besar! 🚀💪',
       '',
-      'Sukses terus bersama TREX TOP UP! 🦖🔥'
+      '*Semakin aktif, semakin besar peluang mendapatkan komisi yang lebih besar!* \uD83D\uDE80\uD83D\uDCAA',
+      '',
+      'Sukses terus bersama *TREX TOP UP*! \uD83E\uDD96\uD83D\uDD25'
     );
   }
 
   message.push(
     '',
-    '📄 PDF Laporan:',
+    '\uD83D\uDCC4 PDF Laporan:',
     result?.pdfUrl||'',
     '',
     'Terima kasih.'
@@ -1833,7 +1846,6 @@ function buildReferralReportMessage(r,result,from,to){
 
   return message.join('\n');
 }
-
 function sendReferralReport(r,btn){
   const wa=String(r?.wa||'').replace(/\D/g,'');
   if(!wa){
