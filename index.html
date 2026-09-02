@@ -1760,7 +1760,7 @@ function sendResellerReport(r,btn){
         'Terima kasih.'
       ].join('\n');
 
-      const url='https://wa.me/'+wa+'?text='+encodeURIComponent(msg);
+      const url='https://wa.me/'+wa+'?text='+encodeReferralWhatsAppMessage(msg);
 
       try{
         waWindow.location.href=url;
@@ -1792,19 +1792,23 @@ function buildReferralReportMessage(r,result,from,to){
 
   const commission=Number(result?.commission||0);
 
-  // Emoji dibuat runtime agar aman dari masalah encoding saat deploy/copy-paste.
+  /*
+   * Emoji sengaja menggunakan token ASCII di tahap pembuatan pesan.
+   * Token akan diganti menjadi byte UTF-8 emoji saat membentuk URL WhatsApp.
+   * Ini mencegah karakter emoji rusak menjadi ? /   pada proses copy/deploy.
+   */
   const E={
-    fire:String.fromCodePoint(0x1F525),       // 🔥
-    strong:String.fromCodePoint(0x1F4AA),     // 💪
-    warning:String.fromCodePoint(0x26A0,0xFE0F), // ⚠️
-    trex:String.fromCodePoint(0x1F996),        // 🦖
-    money:String.fromCodePoint(0x1F4B0),       // 💰
-    rocket:String.fromCodePoint(0x1F680),      // 🚀
-    chart:String.fromCodePoint(0x1F4CA),       // 📊
-    check:String.fromCodePoint(0x2705),        // ✅
-    party:String.fromCodePoint(0x1F389),       // 🎉
-    paper:String.fromCodePoint(0x1F4C4),       // 📄
-    pray:String.fromCodePoint(0x1F64F)         // 🙏
+    fire:'[[FIRE]]',
+    strong:'[[STRONG]]',
+    warning:'[[WARNING]]',
+    trex:'[[TREX]]',
+    money:'[[MONEY]]',
+    rocket:'[[ROCKET]]',
+    chart:'[[CHART]]',
+    check:'[[CHECK]]',
+    party:'[[PARTY]]',
+    paper:'[[PAPER]]',
+    pray:'[[PRAY]]'
   };
 
   const message=[
@@ -1861,6 +1865,35 @@ function buildReferralReportMessage(r,result,from,to){
 
   return message.join('\n');
 }
+
+function encodeReferralWhatsAppMessage(msg){
+  const encoded=encodeURIComponent(String(msg||''));
+
+  /*
+   * Replace encoded ASCII tokens with explicit UTF-8 bytes.
+   * This bypasses the browser/deployment encoding path for emoji.
+   */
+  const emojiMap={
+    '%5B%5BFIRE%5D%5D':'%F0%9F%94%A5',
+    '%5B%5BSTRONG%5D%5D':'%F0%9F%92%AA',
+    '%5B%5BWARNING%5D%5D':'%E2%9A%A0%EF%B8%8F',
+    '%5B%5BTREX%5D%5D':'%F0%9F%A6%96',
+    '%5B%5BMONEY%5D%5D':'%F0%9F%92%B0',
+    '%5B%5BROCKET%5D%5D':'%F0%9F%9A%80',
+    '%5B%5BCHART%5D%5D':'%F0%9F%93%8A',
+    '%5B%5BCHECK%5D%5D':'%E2%9C%85',
+    '%5B%5BPARTY%5D%5D':'%F0%9F%8E%89',
+    '%5B%5BPAPER%5D%5D':'%F0%9F%93%84',
+    '%5B%5BPRAY%5D%5D':'%F0%9F%99%8F'
+  };
+
+  let out=encoded;
+  Object.keys(emojiMap).forEach(function(token){
+    out=out.split(token).join(emojiMap[token]);
+  });
+  return out;
+}
+
 function sendReferralReport(r,btn){
   const wa=String(r?.wa||'').replace(/\D/g,'');
   if(!wa){
