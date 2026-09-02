@@ -833,13 +833,17 @@ td.num{text-align:center}
 .publicDrop:hover .publicDropMenu{display:block}
 .publicHomeBannerWrap{padding:16px 22px 0}
 .publicBanner{
-  position:relative;width:100%;height:min(34vw,430px);min-height:230px;
+  position:relative;width:100%;min-height:190px;
   overflow:hidden;border:1px solid #3c2d0b;border-radius:16px;background:#080808;
-  box-shadow:0 16px 40px rgba(0,0,0,.28)
+  box-shadow:0 16px 40px rgba(0,0,0,.28);
+  transition:height .25s ease
 }
-.publicBannerSlide{position:absolute;inset:0;opacity:0;transition:opacity .45s ease;pointer-events:none}
+.publicBannerSlide{position:absolute;left:0;right:0;top:0;opacity:0;transition:opacity .45s ease;pointer-events:none}
 .publicBannerSlide.active{opacity:1;pointer-events:auto}
-.publicBannerSlide img{width:100%;height:100%;object-fit:cover;display:block}
+.publicBannerSlide img{
+  width:100%;height:auto;display:block;
+  object-fit:contain;object-position:center center;background:#080808
+}
 .bannerShade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.16),transparent 50%,rgba(0,0,0,.18));pointer-events:none}
 .bannerArrow{position:absolute;top:50%;transform:translateY(-50%);z-index:4;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.32);color:#fff;font-size:24px;cursor:pointer}
 .bannerArrow:hover{border-color:#f5c542;color:#ffd966;background:rgba(0,0,0,.55)}
@@ -874,7 +878,7 @@ td.num{text-align:center}
 @media(max-width:900px){
  .publicNav{padding:0 16px}.publicMenu{gap:18px;font-size:12px}
  .publicHero{grid-template-columns:1fr}.publicHeroPanel{padding:34px;min-height:auto}
- .publicHeroLogoCard{min-height:280px}.publicHomeBannerWrap{padding:10px 12px 0}.publicBanner{height:45vw;min-height:190px}
+ .publicHeroLogoCard{min-height:280px}.publicHomeBannerWrap{padding:10px 12px 0}.publicBanner{min-height:190px}
 }
 @media(max-width:680px){
  .publicNav{height:64px}.publicBrand{min-width:auto}.publicBrand img{width:38px;height:38px}.publicBrandText{font-size:15px}
@@ -1083,11 +1087,13 @@ async function callServer(fn,args,ok,fail){
     clearTimeout(timer);
   }
 }
-loadHomeBanners();
 function showError(msg){
   document.getElementById('page').innerHTML='<div class="alert err">'+esc(msg)+'</div>';
 }
 function normalizeError(e){return e&&e.message?e.message:String(e||'Terjadi kesalahan');}
+
+// Mulai mengambil banner setelah GAS API siap.
+loadHomeBanners();
 
 
 
@@ -1127,25 +1133,50 @@ let homeBannerTimer=null;
 function loadHomeBanners(){
   const host=document.getElementById('publicBanner');
   if(!host)return;
+
   callServer('getBannerData',[],function(rows){
     homeBanners=Array.isArray(rows)?rows:[];
+    homeBannerIndex=0;
     renderHomeBanners();
   },function(){
     const empty=host.querySelector('.bannerEmpty');
     if(empty)empty.textContent='Banner belum tersedia.';
   });
 }
+
+function resizeBannerToActiveImage(){
+  const host=document.getElementById('publicBanner');
+  const img=host?.querySelector('.publicBannerSlide.active img');
+  if(!host || !img)return;
+
+  const apply=function(){
+    if(!img.naturalWidth || !img.naturalHeight)return;
+    const width=host.clientWidth;
+    if(!width)return;
+    const height=Math.round(width*(img.naturalHeight/img.naturalWidth));
+    host.style.height=Math.max(190,height)+'px';
+  };
+
+  if(img.complete)apply();
+  img.addEventListener('load',apply,{once:true});
+  requestAnimationFrame(apply);
+}
+
 function renderHomeBanners(){
   const host=document.getElementById('publicBanner');
   const dots=document.getElementById('bannerDots');
   if(!host)return;
+
   [...host.querySelectorAll('.publicBannerSlide')].forEach(x=>x.remove());
   if(dots)dots.innerHTML='';
+
   if(!homeBanners.length){
     const empty=host.querySelector('.bannerEmpty');
     if(empty)empty.textContent='Banner belum tersedia.';
+    host.style.height='';
     return;
   }
+
   const empty=host.querySelector('.bannerEmpty');
   if(empty)empty.remove();
 
@@ -1153,11 +1184,21 @@ function renderHomeBanners(){
     const slide=document.createElement('div');
     slide.className='publicBannerSlide'+(i===homeBannerIndex?' active':'');
     slide.innerHTML='<img src="'+esc(b.image)+'" alt="'+esc(b.name||'TREX BANNER')+'"><div class="bannerShade"></div>';
+
     if(b.link && b.link!=='#'){
       slide.style.cursor='pointer';
       slide.onclick=function(){window.open(b.link,'_blank','noopener');};
     }
+
     host.insertBefore(slide,host.firstChild);
+
+    const img=slide.querySelector('img');
+    if(img){
+      img.addEventListener('load',function(){
+        if(i===homeBannerIndex)resizeBannerToActiveImage();
+      });
+    }
+
     if(dots){
       const dot=document.createElement('button');
       dot.className='bannerDot'+(i===homeBannerIndex?' active':'');
@@ -1166,21 +1207,33 @@ function renderHomeBanners(){
       dots.appendChild(dot);
     }
   });
+
+  resizeBannerToActiveImage();
   resetBannerTimer();
 }
+
 function resetBannerTimer(){
   clearTimeout(homeBannerTimer);
   if(!homeBanners.length)return;
   const duration=Math.max(2,Number(homeBanners[homeBannerIndex]?.duration)||5);
   homeBannerTimer=setTimeout(function(){bannerNext();},duration*1000);
 }
+
 function goBanner(i){
   if(!homeBanners.length)return;
   homeBannerIndex=(i+homeBanners.length)%homeBanners.length;
-  document.querySelectorAll('.publicBannerSlide').forEach(function(el,idx){el.classList.toggle('active',idx===homeBannerIndex);});
-  document.querySelectorAll('.bannerDot').forEach(function(el,idx){el.classList.toggle('active',idx===homeBannerIndex);});
+
+  document.querySelectorAll('.publicBannerSlide').forEach(function(el,idx){
+    el.classList.toggle('active',idx===homeBannerIndex);
+  });
+  document.querySelectorAll('.bannerDot').forEach(function(el,idx){
+    el.classList.toggle('active',idx===homeBannerIndex);
+  });
+
+  resizeBannerToActiveImage();
   resetBannerTimer();
 }
+
 function bannerPrev(){goBanner(homeBannerIndex-1)}
 function bannerNext(){goBanner(homeBannerIndex+1)}
 
