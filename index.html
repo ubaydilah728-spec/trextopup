@@ -1760,7 +1760,11 @@ function sendResellerReport(r,btn){
         'Terima kasih.'
       ].join('\n');
 
-      const url='https://wa.me/'+wa+'?text='+encodeURIComponent(msg);
+      const encodedText=encodeWhatsAppUtf8(msg);
+const isMobile=/Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
+const url=isMobile
+  ? 'https://wa.me/'+wa+'?text='+encodedText
+  : 'https://web.whatsapp.com/send?phone='+wa+'&text='+encodedText;
 
       try{
         waWindow.location.href=url;
@@ -1793,22 +1797,21 @@ function buildReferralReportMessage(r,result,from,to){
   const commission=Number(result?.commission||0);
 
   /*
-   * Source ASCII-safe:
-   * emoji dibuat saat runtime memakai surrogate pair Unicode.
-   * Ini menghindari karakter emoji rusak saat file dipindah/deploy.
+   * Emoji tetap dibuat dari Unicode escape ASCII-safe.
+   * Contoh: \uD83D\uDD25 => 🔥 saat JavaScript dijalankan.
    */
   const E={
-    fire:'\uD83D\uDD25',      // 🔥
-    strong:'\uD83D\uDCAA',    // 💪
-    warning:'\u26A0\uFE0F',   // ⚠️
-    trex:'\uD83E\uDD96',      // 🦖
-    money:'\uD83D\uDCB0',     // 💰
-    rocket:'\uD83D\uDE80',    // 🚀
-    chart:'\uD83D\uDCCA',     // 📊
-    check:'\u2705',            // ✅
-    party:'\uD83C\uDF89',      // 🎉
-    paper:'\uD83D\uDCC4',      // 📄
-    pray:'\uD83D\uDE4F'        // 🙏
+    fire:'\uD83D\uDD25',       // 🔥
+    strong:'\uD83D\uDCAA',     // 💪
+    warning:'\u26A0\uFE0F',    // ⚠️
+    trex:'\uD83E\uDD96',       // 🦖
+    money:'\uD83D\uDCB0',      // 💰
+    rocket:'\uD83D\uDE80',     // 🚀
+    chart:'\uD83D\uDCCA',      // 📊
+    check:'\u2705',             // ✅
+    party:'\uD83C\uDF89',       // 🎉
+    paper:'\uD83D\uDCC4',       // 📄
+    pray:'\uD83D\uDE4F'         // 🙏
   };
 
   const message=[
@@ -1863,8 +1866,35 @@ function buildReferralReportMessage(r,result,from,to){
     'Terima kasih.'
   );
 
-  // PENTING: satu backslash menghasilkan newline sungguhan.
   return message.join('\n');
+}
+
+/*
+ * Encode URL query dengan UTF-8 byte secara manual.
+ * Ini lebih kuat untuk WhatsApp daripada bergantung pada proses
+ * decoding/encoding perantara.
+ */
+function encodeWhatsAppUtf8(text){
+  const bytes=new TextEncoder().encode(String(text||''));
+  let out='';
+
+  for(let i=0;i<bytes.length;i++){
+    const b=bytes[i];
+
+    // RFC 3986 unreserved: A-Z a-z 0-9 - . _ ~
+    if(
+      (b>=0x41&&b<=0x5A) ||
+      (b>=0x61&&b<=0x7A) ||
+      (b>=0x30&&b<=0x39) ||
+      b===0x2D || b===0x2E || b===0x5F || b===0x7E
+    ){
+      out+=String.fromCharCode(b);
+    }else{
+      out+='%'+b.toString(16).toUpperCase().padStart(2,'0');
+    }
+  }
+
+  return out;
 }
 function sendReferralReport(r,btn){
   const wa=String(r?.wa||'').replace(/\D/g,'');
