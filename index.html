@@ -1793,7 +1793,7 @@ function buildReferralReportMessage(r,result,from,to){
   const commission=Number(result?.commission||0);
 
   const message=[
-    '\uD83D\uDCCA LAPORAN REFERRAL TREX TOP UP',
+    '📊 LAPORAN REFERRAL TREX TOP UP',
     '',
     'Referral : '+(result?.referral||r?.referral||'-'),
     'Periode  : '+periode,
@@ -1807,38 +1807,38 @@ function buildReferralReportMessage(r,result,from,to){
   if(commission<10000){
     message.push(
       '',
-      '\u26A0\uFE0F *INFORMASI KOMISI*',
+      '⚠️ *INFORMASI KOMISI*',
       'Komisi periode ini sebesar *'+fmtNumber(commission)+
         '* dan masih belum mencapai minimum pencairan *Rp10.000*.',
       '',
-      'Jangan berkecil hati, tetap semangat! \uD83D\uDCAA\uD83D\uDD25',
+      'Jangan berkecil hati, tetap semangat! 💪🔥',
       'Setiap transaksi dan referral yang kamu dapatkan adalah langkah menuju komisi yang lebih besar.',
       '',
-      'Mari tingkatkan semangat dan aktivitas di bulan berikutnya agar target pencairan *Rp10.000* segera tercapai. \uD83D\uDE80',
+      'Mari tingkatkan semangat dan aktivitas di bulan berikutnya agar target pencairan *Rp10.000* segera tercapai. 🚀',
       '',
-      '*Semakin aktif, semakin besar komisinya!* \uD83D\uDCB0\uD83D\uDD25',
+      '*Semakin aktif, semakin besar komisinya!* 💰🔥',
       '',
-      'Terima kasih atas kontribusi dan kerja samanya bersama *TREX TOP UP*. \uD83D\uDE4F'
+      'Terima kasih atas kontribusi dan kerja samanya bersama *TREX TOP UP*. 🙏'
     );
   }else{
     message.push(
       '',
-      '\u2705 *INFORMASI KOMISI*',
+      '✅ *INFORMASI KOMISI*',
       'Selamat, komisi periode ini sebesar *'+fmtNumber(commission)+
-        '* dan sudah mencapai minimum pencairan *Rp10.000*. \uD83C\uDF89',
+        '* dan sudah mencapai minimum pencairan *Rp10.000*. 🎉',
       '',
       'Terima kasih atas kerja keras dan kontribusinya bersama *TREX TOP UP*.',
       'Tetap semangat dan terus tingkatkan aktivitas referral di bulan berikutnya.',
       '',
-      '*Semakin aktif, semakin besar peluang mendapatkan komisi yang lebih besar!* \uD83D\uDE80\uD83D\uDCAA',
+      '*Semakin aktif, semakin besar peluang mendapatkan komisi yang lebih besar!* 🚀💪',
       '',
-      'Sukses terus bersama *TREX TOP UP*! \uD83E\uDD96\uD83D\uDD25'
+      'Sukses terus bersama *TREX TOP UP*! 🦖🔥'
     );
   }
 
   message.push(
     '',
-    '\uD83D\uDCC4 PDF Laporan:',
+    '📄 PDF Laporan:',
     result?.pdfUrl||'',
     '',
     'Terima kasih.'
