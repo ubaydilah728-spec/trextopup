@@ -1030,7 +1030,6 @@ const publicLogo=document.getElementById('publicLogo');
 const publicHeroLogo=document.getElementById('publicHeroLogo');
 if(publicLogo)publicLogo.src=LOGO_DATA;
 if(publicHeroLogo)publicHeroLogo.src=LOGO_DATA;
-loadHomeBanners();
 
 let session=null;
 let currentPage='transactions';
@@ -1084,6 +1083,7 @@ async function callServer(fn,args,ok,fail){
     clearTimeout(timer);
   }
 }
+loadHomeBanners();
 function showError(msg){
   document.getElementById('page').innerHTML='<div class="alert err">'+esc(msg)+'</div>';
 }
