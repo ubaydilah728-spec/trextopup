@@ -1792,8 +1792,23 @@ function buildReferralReportMessage(r,result,from,to){
 
   const commission=Number(result?.commission||0);
 
+  // Emoji dibuat runtime agar aman dari masalah encoding saat deploy/copy-paste.
+  const E={
+    fire:String.fromCodePoint(0x1F525),       // 🔥
+    strong:String.fromCodePoint(0x1F4AA),     // 💪
+    warning:String.fromCodePoint(0x26A0,0xFE0F), // ⚠️
+    trex:String.fromCodePoint(0x1F996),        // 🦖
+    money:String.fromCodePoint(0x1F4B0),       // 💰
+    rocket:String.fromCodePoint(0x1F680),      // 🚀
+    chart:String.fromCodePoint(0x1F4CA),       // 📊
+    check:String.fromCodePoint(0x2705),        // ✅
+    party:String.fromCodePoint(0x1F389),       // 🎉
+    paper:String.fromCodePoint(0x1F4C4),       // 📄
+    pray:String.fromCodePoint(0x1F64F)         // 🙏
+  };
+
   const message=[
-    '📊 LAPORAN REFERRAL TREX TOP UP',
+    E.chart+' LAPORAN REFERRAL TREX TOP UP',
     '',
     'Referral : '+(result?.referral||r?.referral||'-'),
     'Periode  : '+periode,
@@ -1807,38 +1822,38 @@ function buildReferralReportMessage(r,result,from,to){
   if(commission<10000){
     message.push(
       '',
-      '⚠️ *INFORMASI KOMISI*',
+      E.warning+' *INFORMASI KOMISI*',
       'Komisi periode ini sebesar *'+fmtNumber(commission)+
         '* dan masih belum mencapai minimum pencairan *Rp10.000*.',
       '',
-      'Jangan berkecil hati, tetap semangat! 💪🔥',
+      'Jangan berkecil hati, tetap semangat! '+E.strong+E.fire,
       'Setiap transaksi dan referral yang kamu dapatkan adalah langkah menuju komisi yang lebih besar.',
       '',
-      'Mari tingkatkan semangat dan aktivitas di bulan berikutnya agar target pencairan *Rp10.000* segera tercapai. 🚀',
+      'Mari tingkatkan semangat dan aktivitas di bulan berikutnya agar target pencairan *Rp10.000* segera tercapai. '+E.rocket,
       '',
-      '*Semakin aktif, semakin besar komisinya!* 💰🔥',
+      '*Semakin aktif, semakin besar komisinya!* '+E.money+E.fire,
       '',
-      'Terima kasih atas kontribusi dan kerja samanya bersama *TREX TOP UP*. 🙏'
+      'Terima kasih atas kontribusi dan kerja samanya bersama *TREX TOP UP*. '+E.pray
     );
   }else{
     message.push(
       '',
-      '✅ *INFORMASI KOMISI*',
+      E.check+' *INFORMASI KOMISI*',
       'Selamat, komisi periode ini sebesar *'+fmtNumber(commission)+
-        '* dan sudah mencapai minimum pencairan *Rp10.000*. 🎉',
+        '* dan sudah mencapai minimum pencairan *Rp10.000*. '+E.party,
       '',
       'Terima kasih atas kerja keras dan kontribusinya bersama *TREX TOP UP*.',
       'Tetap semangat dan terus tingkatkan aktivitas referral di bulan berikutnya.',
       '',
-      '*Semakin aktif, semakin besar peluang mendapatkan komisi yang lebih besar!* 🚀💪',
+      '*Semakin aktif, semakin besar peluang mendapatkan komisi yang lebih besar!* '+E.rocket+E.strong,
       '',
-      'Sukses terus bersama *TREX TOP UP*! 🦖🔥'
+      'Sukses terus bersama *TREX TOP UP*! '+E.trex+E.fire
     );
   }
 
   message.push(
     '',
-    '📄 PDF Laporan:',
+    E.paper+' PDF Laporan:',
     result?.pdfUrl||'',
     '',
     'Terima kasih.'
