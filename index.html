@@ -906,9 +906,12 @@ td.num{text-align:center}
 .bannerArrow{position:absolute;top:50%;transform:translateY(-50%);z-index:4;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.32);color:#fff;font-size:24px;cursor:pointer}
 .bannerArrow:hover{border-color:#f5c542;color:#ffd966;background:rgba(0,0,0,.55)}
 .bannerPrev{left:14px}.bannerNext{right:14px}
-.bannerDots{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:5;display:flex;gap:7px}
-.bannerDot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.34);cursor:pointer;border:0;padding:0}
-.bannerDot.active{background:#ffd966;box-shadow:0 0 10px rgba(245,197,66,.55)}
+/* Accessibility: area klik diperbesar agar memenuhi target sentuh, tanpa membuat titik visual menjadi besar. */
+.bannerDots{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:4px}
+.bannerDot{width:24px;height:24px;border-radius:50%;background:transparent;cursor:pointer;border:0;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.bannerDot::before{content:"";width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.34);transition:all .2s ease}
+.bannerDot.active::before{background:#ffd966;box-shadow:0 0 10px rgba(245,197,66,.55)}
+.bannerDot:focus-visible{outline:2px solid #ffd966;outline-offset:2px}
 .bannerEmpty{height:100%;display:flex;align-items:center;justify-content:center;color:#777;font-size:13px}
 .publicHero{max-width:1200px;margin:24px auto 0;padding:0 22px 32px;display:grid;grid-template-columns:1.4fr 1fr;gap:20px}
 .publicHeroPanel,.publicHeroLogoCard{
@@ -981,6 +984,7 @@ td.num{text-align:center}
     <button class="btn btnGold publicNavLogin" type="button" onclick="enterLogin()">LOGIN</button>
   </header>
 
+  <main id="publicMain">
   <div class="publicHomeBannerWrap">
     <div id="publicBanner" class="publicBanner">
       <!-- Fallback langsung tampil, sehingga banner tidak menunggu respons Apps Script -->
@@ -990,8 +994,8 @@ td.num{text-align:center}
              fetchpriority="high" decoding="async">
         <div class="bannerShade"></div>
       </div>
-      <button class="bannerArrow bannerPrev" type="button" onclick="bannerPrev()">‹</button>
-      <button class="bannerArrow bannerNext" type="button" onclick="bannerNext()">›</button>
+      <button class="bannerArrow bannerPrev" type="button" aria-label="Banner sebelumnya" onclick="bannerPrev()">‹</button>
+      <button class="bannerArrow bannerNext" type="button" aria-label="Banner berikutnya" onclick="bannerNext()">›</button>
       <div id="bannerDots" class="bannerDots"></div>
     </div>
   </div>
@@ -1018,6 +1022,8 @@ td.num{text-align:center}
       <p>Simple • Cepat • Aman • Terpercaya</p>
     </div>
   </section>
+
+  </main>
 
   <footer class="publicFooter">
     <span><b style="color:#ffd966">TREX TOP UP</b> • Fast Response 24 JAM</span>
@@ -1275,8 +1281,8 @@ function renderHomeBanners(keepBoot){
 
   if(!homeBanners.length){
     host.innerHTML='<div class="bannerEmpty">Banner belum tersedia.</div>'+
-      '<button class="bannerArrow bannerPrev" type="button" onclick="bannerPrev()">‹</button>'+
-      '<button class="bannerArrow bannerNext" type="button" onclick="bannerNext()">›</button>'+
+      '<button class="bannerArrow bannerPrev" type="button" aria-label="Banner sebelumnya" onclick="bannerPrev()">‹</button>'+
+      '<button class="bannerArrow bannerNext" type="button" aria-label="Banner berikutnya" onclick="bannerNext()">›</button>'+
       '<div id="bannerDots" class="bannerDots"></div>';
     return;
   }
