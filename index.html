@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
+<!-- FAST BANNER PRELOAD: agar banner pertama mulai diunduh sejak halaman dibuka -->
+<link rel="preconnect" href="https://drive.google.com">
+<link rel="dns-prefetch" href="https://drive.google.com">
+<link rel="preload" as="image" href="https://drive.google.com/thumbnail?id=19VqM7JW3CKdnUB2kG-jMRFkxcL0A5qDi&sz=w2000" fetchpriority="high">
+
 <!-- PRIMARY SEO -->
 <title>TREX TOP UP | Top Up Coin MICO Cepat, Aman & 24 Jam</title>
 
@@ -889,12 +894,14 @@ td.num{text-align:center}
   box-shadow:0 16px 40px rgba(0,0,0,.28);
   transition:height .25s ease
 }
-.publicBannerSlide{position:absolute;left:0;right:0;top:0;opacity:0;transition:opacity .45s ease;pointer-events:none}
+.publicBannerSlide{position:absolute;left:0;right:0;top:0;opacity:0;transition:opacity .35s ease;pointer-events:none}
 .publicBannerSlide.active{opacity:1;pointer-events:auto}
 .publicBannerSlide img{
   width:100%;height:auto;display:block;
   object-fit:contain;object-position:center center;background:#080808
 }
+/* Banner awal tidak menunggu Google Apps Script. Gambar fallback langsung diminta browser. */
+.publicBannerBoot{position:relative;opacity:1;pointer-events:auto}
 .bannerShade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.16),transparent 50%,rgba(0,0,0,.18));pointer-events:none}
 .bannerArrow{position:absolute;top:50%;transform:translateY(-50%);z-index:4;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.32);color:#fff;font-size:24px;cursor:pointer}
 .bannerArrow:hover{border-color:#f5c542;color:#ffd966;background:rgba(0,0,0,.55)}
@@ -976,7 +983,12 @@ td.num{text-align:center}
 
   <div class="publicHomeBannerWrap">
     <div id="publicBanner" class="publicBanner">
-      <div class="bannerEmpty">Memuat banner...</div>
+      <!-- Fallback langsung tampil, sehingga banner tidak menunggu respons Apps Script -->
+      <div class="publicBannerSlide publicBannerBoot active">
+        <img src="https://drive.google.com/thumbnail?id=19VqM7JW3CKdnUB2kG-jMRFkxcL0A5qDi&sz=w2000"
+             alt="TREX ROAR — Rewards & Support" fetchpriority="high" decoding="async">
+        <div class="bannerShade"></div>
+      </div>
       <button class="bannerArrow bannerPrev" type="button" onclick="bannerPrev()">‹</button>
       <button class="bannerArrow bannerNext" type="button" onclick="bannerNext()">›</button>
       <div id="bannerDots" class="bannerDots"></div>
@@ -1181,17 +1193,69 @@ function closeComingSoon(e){
 let homeBanners=[];
 let homeBannerIndex=0;
 let homeBannerTimer=null;
+const BANNER_CACHE_KEY='TREX_HOME_BANNERS_V2';
+const FALLBACK_BANNERS=[
+  {active:true,order:1,name:'TREX ROAR — Rewards & Support',image:'https://drive.google.com/thumbnail?id=19VqM7JW3CKdnUB2kG-jMRFkxcL0A5qDi&sz=w2000',link:'#',duration:5},
+  {active:true,order:2,name:'TEMAN TREX',image:'https://drive.google.com/thumbnail?id=1FOImQ9HHRU65geCaay-xWn7bl8fTB0AX&sz=w2000',link:'#',duration:5},
+  {active:true,order:3,name:'TREX TOP UP',image:'https://drive.google.com/thumbnail?id=1e3DTQjz2XDnMDi6ZkgSlOTcDCK0etHmS&sz=w2000',link:'#',duration:5}
+];
+
+function normalizeBannerRows(rows){
+  return (Array.isArray(rows)?rows:[])
+    .filter(b=>b && b.active!==false && b.image)
+    .sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
+}
+
+function readBannerCache(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(BANNER_CACHE_KEY)||'null');
+    const rows=normalizeBannerRows(saved?.rows||saved);
+    return rows.length?rows:null;
+  }catch(_){ return null; }
+}
+
+function saveBannerCache(rows){
+  try{localStorage.setItem(BANNER_CACHE_KEY,JSON.stringify({rows,updatedAt:Date.now()}));}catch(_){}
+}
+
+function sameBannerSet(a,b){
+  return JSON.stringify((a||[]).map(x=>[x.order,x.name,x.image,x.link,x.duration]))===
+         JSON.stringify((b||[]).map(x=>[x.order,x.name,x.image,x.link,x.duration]));
+}
+
+function preloadBannerImages(rows){
+  normalizeBannerRows(rows).forEach(function(b,i){
+    const img=new Image();
+    img.decoding='async';
+    if(i===0)img.fetchPriority='high';
+    img.src=b.image;
+  });
+}
+
 function loadHomeBanners(){
   const host=document.getElementById('publicBanner');
   if(!host)return;
 
+  // Tampilkan cache langsung. Jika belum pernah ada cache, gunakan fallback bawaan.
+  const cached=readBannerCache();
+  homeBanners=cached||FALLBACK_BANNERS;
+  homeBannerIndex=0;
+  renderHomeBanners(true);
+  preloadBannerImages(homeBanners);
+
+  // Data terbaru tetap diambil di background tanpa membuat banner kosong lagi.
   callServer('getBannerData',[],function(rows){
-    homeBanners=Array.isArray(rows)?rows:[];
+    const fresh=normalizeBannerRows(rows);
+    if(!fresh.length)return;
+    const changed=!sameBannerSet(homeBanners,fresh);
+    homeBanners=fresh;
     homeBannerIndex=0;
-    renderHomeBanners();
+    saveBannerCache(fresh);
+    preloadBannerImages(fresh);
+    if(changed)renderHomeBanners();
   },function(){
-    const empty=host.querySelector('.bannerEmpty');
-    if(empty)empty.textContent='Banner belum tersedia.';
+    // Jangan hapus banner yang sudah tampil jika server sedang lambat/gagal.
+    console.warn('Banner server belum merespons; memakai banner cache/fallback.');
   });
 }
 
@@ -1213,7 +1277,7 @@ function resizeBannerToActiveImage(){
   requestAnimationFrame(apply);
 }
 
-function renderHomeBanners(){
+function renderHomeBanners(keepBoot){
   const host=document.getElementById('publicBanner');
   const dots=document.getElementById('bannerDots');
   if(!host)return;
@@ -1222,19 +1286,28 @@ function renderHomeBanners(){
   if(dots)dots.innerHTML='';
 
   if(!homeBanners.length){
-    const empty=host.querySelector('.bannerEmpty');
-    if(empty)empty.textContent='Banner belum tersedia.';
-    host.style.height='';
+    host.innerHTML='<div class="bannerEmpty">Banner belum tersedia.</div>'+
+      '<button class="bannerArrow bannerPrev" type="button" onclick="bannerPrev()">‹</button>'+
+      '<button class="bannerArrow bannerNext" type="button" onclick="bannerNext()">›</button>'+
+      '<div id="bannerDots" class="bannerDots"></div>';
     return;
   }
-
-  const empty=host.querySelector('.bannerEmpty');
-  if(empty)empty.remove();
 
   homeBanners.forEach(function(b,i){
     const slide=document.createElement('div');
     slide.className='publicBannerSlide'+(i===homeBannerIndex?' active':'');
-    slide.innerHTML='<img src="'+esc(b.image)+'" alt="'+esc(b.name||'TREX BANNER')+'"><div class="bannerShade"></div>';
+
+    const img=document.createElement('img');
+    img.src=b.image;
+    img.alt=b.name||'TREX BANNER';
+    img.decoding='async';
+    img.loading='eager';
+    if(i===0)img.fetchPriority='high';
+    slide.appendChild(img);
+
+    const shade=document.createElement('div');
+    shade.className='bannerShade';
+    slide.appendChild(shade);
 
     if(b.link && b.link!=='#'){
       slide.style.cursor='pointer';
@@ -1243,17 +1316,15 @@ function renderHomeBanners(){
 
     host.insertBefore(slide,host.firstChild);
 
-    const img=slide.querySelector('img');
-    if(img){
-      img.addEventListener('load',function(){
-        if(i===homeBannerIndex)resizeBannerToActiveImage();
-      });
-    }
+    img.addEventListener('load',function(){
+      if(i===homeBannerIndex)resizeBannerToActiveImage();
+    },{once:true});
 
     if(dots){
       const dot=document.createElement('button');
       dot.className='bannerDot'+(i===homeBannerIndex?' active':'');
       dot.type='button';
+      dot.setAttribute('aria-label','Tampilkan banner '+(i+1));
       dot.onclick=function(){goBanner(i);};
       dots.appendChild(dot);
     }
