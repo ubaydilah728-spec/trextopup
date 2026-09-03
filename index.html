@@ -889,19 +889,19 @@ td.num{text-align:center}
 .publicDrop:hover .publicDropMenu{display:block}
 .publicHomeBannerWrap{padding:16px 22px 0}
 .publicBanner{
-  position:relative;width:100%;min-height:190px;
+  position:relative;width:100%;aspect-ratio:16/5;min-height:190px;
   overflow:hidden;border:1px solid #3c2d0b;border-radius:16px;background:#080808;
-  box-shadow:0 16px 40px rgba(0,0,0,.28);
-  transition:height .25s ease
+  box-shadow:0 16px 40px rgba(0,0,0,.28)
 }
-.publicBannerSlide{position:absolute;left:0;right:0;top:0;opacity:0;transition:opacity .35s ease;pointer-events:none}
+/* Ruang banner disiapkan sejak awal agar gambar tidak menggeser layout (CLS). */
+.publicBannerSlide{position:absolute;inset:0;opacity:0;transition:opacity .35s ease;pointer-events:none}
 .publicBannerSlide.active{opacity:1;pointer-events:auto}
 .publicBannerSlide img{
-  width:100%;height:auto;display:block;
+  width:100%;height:100%;display:block;
   object-fit:contain;object-position:center center;background:#080808
 }
-/* Banner awal tidak menunggu Google Apps Script. Gambar fallback langsung diminta browser. */
-.publicBannerBoot{position:relative;opacity:1;pointer-events:auto}
+/* Banner awal langsung tampil tanpa mengubah tinggi container. */
+.publicBannerBoot{position:absolute;inset:0;opacity:1;pointer-events:auto}
 .bannerShade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.16),transparent 50%,rgba(0,0,0,.18));pointer-events:none}
 .bannerArrow{position:absolute;top:50%;transform:translateY(-50%);z-index:4;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.32);color:#fff;font-size:24px;cursor:pointer}
 .bannerArrow:hover{border-color:#f5c542;color:#ffd966;background:rgba(0,0,0,.55)}
@@ -986,7 +986,8 @@ td.num{text-align:center}
       <!-- Fallback langsung tampil, sehingga banner tidak menunggu respons Apps Script -->
       <div class="publicBannerSlide publicBannerBoot active">
         <img src="https://drive.google.com/thumbnail?id=19VqM7JW3CKdnUB2kG-jMRFkxcL0A5qDi&sz=w2000"
-             alt="TREX ROAR — Rewards & Support" fetchpriority="high" decoding="async">
+             alt="TREX ROAR — Rewards & Support" width="1600" height="500"
+             fetchpriority="high" decoding="async">
         <div class="bannerShade"></div>
       </div>
       <button class="bannerArrow bannerPrev" type="button" onclick="bannerPrev()">‹</button>
@@ -1012,7 +1013,7 @@ td.num{text-align:center}
       </div>
     </div>
     <div class="publicHeroLogoCard">
-      <img id="publicHeroLogo" alt="TREX TOP UP">
+      <img id="publicHeroLogo" alt="TREX TOP UP" width="290" height="260">
       <h2>TREX TOP UP</h2>
       <p>Simple • Cepat • Aman • Terpercaya</p>
     </div>
@@ -1260,21 +1261,9 @@ function loadHomeBanners(){
 }
 
 function resizeBannerToActiveImage(){
-  const host=document.getElementById('publicBanner');
-  const img=host?.querySelector('.publicBannerSlide.active img');
-  if(!host || !img)return;
-
-  const apply=function(){
-    if(!img.naturalWidth || !img.naturalHeight)return;
-    const width=host.clientWidth;
-    if(!width)return;
-    const height=Math.round(width*(img.naturalHeight/img.naturalWidth));
-    host.style.height=Math.max(190,height)+'px';
-  };
-
-  if(img.complete)apply();
-  img.addEventListener('load',apply,{once:true});
-  requestAnimationFrame(apply);
+  /* Tinggi banner sengaja tidak lagi diubah setelah gambar selesai dimuat.
+     Container sudah memiliki aspect-ratio tetap untuk mencegah layout shift (CLS). */
+  return;
 }
 
 function renderHomeBanners(keepBoot){
@@ -1298,6 +1287,9 @@ function renderHomeBanners(keepBoot){
     slide.className='publicBannerSlide'+(i===homeBannerIndex?' active':'');
 
     const img=document.createElement('img');
+    /* Dimensi eksplisit memberi browser ruang sebelum gambar selesai dimuat. */
+    img.width=1600;
+    img.height=500;
     img.src=b.image;
     img.alt=b.name||'TREX BANNER';
     img.decoding='async';
