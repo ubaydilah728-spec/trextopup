@@ -1156,8 +1156,7 @@ function showError(msg){
 }
 function normalizeError(e){return e&&e.message?e.message:String(e||'Terjadi kesalahan');}
 
-// Mulai mengambil banner setelah GAS API siap.
-loadHomeBanners();
+// Banner diinisialisasi setelah konfigurasi PUBLIC HOME selesai dimuat.
 
 
 
@@ -1306,9 +1305,7 @@ function renderHomeBanners(keepBoot){
       slide.onclick=function(){window.open(b.link,'_blank','noopener');};
     }
 
-    // Masukkan slide sebelum tombol navigasi agar urutan DOM sama dengan urutan banner.
-    // Sebelumnya semua slide selalu dimasukkan sebagai firstChild sehingga urutannya terbalik.
-    const firstControl=host.querySelector('.bannerArrow')||host.querySelector('.bannerDots');
+    const firstControl=host.querySelector('.bannerArrow, .bannerDots');
     host.insertBefore(slide,firstControl||null);
 
     img.addEventListener('load',function(){
@@ -1340,10 +1337,12 @@ function goBanner(i){
   if(!homeBanners.length)return;
   homeBannerIndex=(i+homeBanners.length)%homeBanners.length;
 
-  document.querySelectorAll('.publicBannerSlide').forEach(function(el,idx){
+  const host=document.getElementById('publicBanner');
+  if(!host)return;
+  host.querySelectorAll('.publicBannerSlide').forEach(function(el,idx){
     el.classList.toggle('active',idx===homeBannerIndex);
   });
-  document.querySelectorAll('.bannerDot').forEach(function(el,idx){
+  host.querySelectorAll('.bannerDot').forEach(function(el,idx){
     el.classList.toggle('active',idx===homeBannerIndex);
   });
 
@@ -1353,6 +1352,15 @@ function goBanner(i){
 
 function bannerPrev(){goBanner(homeBannerIndex-1)}
 function bannerNext(){goBanner(homeBannerIndex+1)}
+
+/* Inisialisasi slider setelah FALLBACK_BANNERS dan fungsi banner sudah siap.
+   Sebelumnya loadHomeBanners() dipanggil terlalu awal sehingga slider bisa gagal
+   sebelum konfigurasi banner selesai diinisialisasi. */
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',loadHomeBanners,{once:true});
+}else{
+  loadHomeBanners();
+}
 
 function doLogin(){
   const u=document.getElementById('loginUser').value.trim();
