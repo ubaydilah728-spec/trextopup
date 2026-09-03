@@ -1306,7 +1306,10 @@ function renderHomeBanners(keepBoot){
       slide.onclick=function(){window.open(b.link,'_blank','noopener');};
     }
 
-    host.insertBefore(slide,host.firstChild);
+    // Masukkan slide sebelum tombol navigasi agar urutan DOM sama dengan urutan banner.
+    // Sebelumnya semua slide selalu dimasukkan sebagai firstChild sehingga urutannya terbalik.
+    const firstControl=host.querySelector('.bannerArrow')||host.querySelector('.bannerDots');
+    host.insertBefore(slide,firstControl||null);
 
     img.addEventListener('load',function(){
       if(i===homeBannerIndex)resizeBannerToActiveImage();
