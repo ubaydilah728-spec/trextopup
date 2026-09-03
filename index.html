@@ -1230,12 +1230,28 @@ function sameBannerSet(a,b){
 }
 
 function preloadBannerImages(rows){
-  normalizeBannerRows(rows).forEach(function(b,i){
-    const img=new Image();
-    img.decoding='async';
-    if(i===0)img.fetchPriority='high';
-    img.src=b.image;
-  });
+  const list=normalizeBannerRows(rows);
+  if(!list.length)return;
+
+  // Prioritaskan hanya banner pertama agar LCP mobile tidak berebut bandwidth.
+  const first=new Image();
+  first.decoding='async';
+  first.fetchPriority='high';
+  first.src=list[0].image;
+
+  // Banner berikutnya dimuat setelah halaman utama mendapat kesempatan selesai lebih dulu.
+  const loadRest=function(){
+    list.slice(1).forEach(function(b){
+      const img=new Image();
+      img.decoding='async';
+      img.src=b.image;
+    });
+  };
+  if('requestIdleCallback' in window){
+    requestIdleCallback(loadRest,{timeout:3500});
+  }else{
+    setTimeout(loadRest,2500);
+  }
 }
 
 function loadHomeBanners(){
@@ -1298,7 +1314,8 @@ function renderHomeBanners(keepBoot){
     img.src=b.image;
     img.alt=b.name||'TREX BANNER';
     img.decoding='async';
-    img.loading='eager';
+    // Hanya slide pertama yang kritis untuk tampilan awal.
+    img.loading=(i===0?'eager':'lazy');
     if(i===0)img.fetchPriority='high';
     slide.appendChild(img);
 
