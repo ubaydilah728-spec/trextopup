@@ -517,10 +517,32 @@ function checkReceived(i){
 }
 
 async function verifyPayment(i){
-  const o=orders[i], received=Number(document.getElementById('received-'+i)?.value||0);
-  if(received!==Number(o.nominal)){ alert('Pembayaran belum sesuai dengan total order.'); return; }
-  try{ await callServer('verifyTopupPayment',[o.orderNo,received,adminSession.token]); await loadOrders(false); }
-  catch(e){ alert(e.message||String(e)); }
+  const o=orders[i];
+  const received=Number(document.getElementById('received-'+i)?.value||0);
+
+  if(received!==Number(o.nominal)){
+    alert('Pembayaran belum sesuai dengan total order.');
+    return;
+  }
+
+  const btn=document.querySelector('#order-'+i+' .btnVerify') || document.getElementById('verify-'+i);
+  if(btn){btn.disabled=true;btn.textContent='Menyimpan...';}
+
+  try{
+    const result=await callServer('verifyTopupPayment',[o.orderNo,received,adminSession.token]);
+    if(!result || result.status!=='PEMBAYARAN DITERIMA'){
+      throw new Error(result?.message||'Verifikasi pembayaran gagal.');
+    }
+
+    // Update only this order locally. No full reload.
+    o.nominalDiterima=received;
+    o.status='PEMBAYARAN DITERIMA';
+    o.admin=adminSession.username||'admin';
+    renderOrders();
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent='Verifikasi Pembayaran';}
+    alert(e.message||String(e));
+  }
 }
 
 let rejectTargetIndex=null;
@@ -560,45 +582,76 @@ async function confirmRejectOrder(){
   }
 
   const btn=document.querySelector('#rejectReasonModal .btnDanger');
-  if(btn){
-    btn.disabled=true;
-    btn.textContent='Menyimpan...';
-  }
+  if(btn){btn.disabled=true;btn.textContent='Menyimpan...';}
 
   try{
     const result=await callServer('rejectTopupOrder',[o.orderNo,reason,adminSession.token]);
 
     if(!result || result.status!=='DITOLAK'){
-      throw new Error('Server tidak mengonfirmasi status DITOLAK.');
+      throw new Error(result?.message||'Pesanan belum berhasil ditolak.');
     }
 
-    if(!result || result.status!=='DITOLAK'){
-      throw new Error('Server belum mengonfirmasi pesanan sebagai DITOLAK.');
-    }
+    o.status='DITOLAK';
+    o.alasanDitolak=reason;
+    o.admin=adminSession.username||'admin';
 
     closeRejectModal();
-    await loadOrders(false);
+
+    // Remove only this order from active list; no full API reload.
+    orders.splice(i,1);
+    renderOrders();
     showSection('summary');
   }catch(e){
-    if(btn){
-      btn.disabled=false;
-      btn.textContent='Tolak Pesanan';
-    }
+    if(btn){btn.disabled=false;btn.textContent='Tolak Pesanan';}
     alert(e.message||String(e));
   }
 }
 
 async function processOrder(i){
   const o=orders[i];
-  try{ await callServer('processTopupOrder',[o.orderNo,adminSession.token]); await loadOrders(false); }
-  catch(e){ alert(e.message||String(e)); }
+  if(o.status!=='PEMBAYARAN DITERIMA'){
+    alert('Verifikasi pembayaran terlebih dahulu.');
+    return;
+  }
+
+  try{
+    const result=await callServer('processTopupOrder',[o.orderNo,adminSession.token]);
+    if(!result || result.status!=='PROSES TOP UP'){
+      throw new Error(result?.message||'Proses top up gagal.');
+    }
+
+    // Update only this order locally. No full reload.
+    o.status='PROSES TOP UP';
+    o.admin=adminSession.username||'admin';
+    renderOrders();
+  }catch(e){
+    alert(e.message||String(e));
+  }
 }
 
 async function finishOrder(i){
   const o=orders[i];
+  if(o.status!=='PROSES TOP UP'){
+    alert('Pesanan belum berada pada PROSES TOP UP.');
+    return;
+  }
+
   if(!confirm('Pastikan Gold sudah benar-benar dikirim ke akun MICO. Tandai order ini sebagai BERHASIL?'))return;
-  try{ await callServer('completeTopupOrder',[o.orderNo,adminSession.token]); await loadOrders(false); showSection('summary'); }
-  catch(e){ alert(e.message||String(e)); }
+
+  try{
+    const result=await callServer('completeTopupOrder',[o.orderNo,adminSession.token]);
+    if(!result || result.status!=='BERHASIL'){
+      throw new Error(result?.message||'Penyelesaian order gagal.');
+    }
+
+    o.status='BERHASIL';
+    o.admin=adminSession.username||'admin';
+
+    // Do not reload the whole order list; move to summary directly.
+    showSection('summary');
+  }catch(e){
+    alert(e.message||String(e));
+  }
 }
 
 function viewProof(i){
