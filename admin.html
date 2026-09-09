@@ -668,7 +668,11 @@ document.getElementById('summaryStatus').addEventListener('change',renderSummary
 document.getElementById('summarySearchOrder').addEventListener('input',renderSummary);
 document.getElementById('summarySearchMico').addEventListener('input',renderSummary);
 document.getElementById('password').addEventListener('keydown',e=>{if(e.key==='Enter')adminLogin();});
-document.getElementById('ordersNavBtn').addEventListener('click',()=>showSection('orders'));
+document.querySelectorAll('.nav button[data-section]').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    showSection(btn.getAttribute('data-section'));
+  });
+});
 
 boot();
 </script>
