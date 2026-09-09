@@ -395,7 +395,10 @@ function startPolling(){
 }
 
 async function loadAll(initial=false){
-  await Promise.all([loadOrders(initial),loadSummary(),loadFinance(),loadActivities(),loadPayments()]);
+  // Saat login/refresh, tampilkan Pesanan terlebih dahulu.
+  // Data menu lain dimuat saat menu tersebut dibuka agar halaman
+  // tidak menunggu banyak request API sekaligus.
+  await loadOrders(initial);
 }
 
 function statusHtml(status){
@@ -505,7 +508,7 @@ function checkReceived(i){
 async function verifyPayment(i){
   const o=orders[i], received=Number(document.getElementById('received-'+i)?.value||0);
   if(received!==Number(o.nominal)){ alert('Pembayaran belum sesuai dengan total order.'); return; }
-  try{ await callServer('verifyTopupPayment',[o.orderNo,received,adminSession.token]); await loadAll(false); }
+  try{ await callServer('verifyTopupPayment',[o.orderNo,received,adminSession.token]); await loadOrders(false); }
   catch(e){ alert(e.message||String(e)); }
 }
 
@@ -514,20 +517,20 @@ async function rejectPayment(i){
   const reason=prompt('Masukkan alasan pembayaran ditolak:\n\nContoh:\n- Transfer kurang\n- Nominal tidak sesuai\n- Bukti pembayaran tidak valid');
   if(reason===null)return;
   if(!reason.trim()){ alert('Alasan penolakan wajib diisi.'); return; }
-  try{ await callServer('rejectTopupOrder',[o.orderNo,reason.trim(),adminSession.token]); await loadAll(false); showSection('summary'); }
+  try{ await callServer('rejectTopupOrder',[o.orderNo,reason.trim(),adminSession.token]); await loadOrders(false); showSection('summary'); }
   catch(e){ alert(e.message||String(e)); }
 }
 
 async function processOrder(i){
   const o=orders[i];
-  try{ await callServer('processTopupOrder',[o.orderNo,adminSession.token]); await loadAll(false); }
+  try{ await callServer('processTopupOrder',[o.orderNo,adminSession.token]); await loadOrders(false); }
   catch(e){ alert(e.message||String(e)); }
 }
 
 async function finishOrder(i){
   const o=orders[i];
   if(!confirm('Pastikan Gold sudah benar-benar dikirim ke akun MICO. Tandai order ini sebagai BERHASIL?'))return;
-  try{ await callServer('completeTopupOrder',[o.orderNo,adminSession.token]); await loadAll(false); showSection('summary'); }
+  try{ await callServer('completeTopupOrder',[o.orderNo,adminSession.token]); await loadOrders(false); showSection('summary'); }
   catch(e){ alert(e.message||String(e)); }
 }
 
