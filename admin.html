@@ -23,7 +23,7 @@ input:focus,textarea:focus{border-color:#d9b34e}
 .err{color:#ff9999;font-size:13px;margin-top:10px;display:none}
 .demo{margin-top:16px;padding:11px 12px;background:#18140b;border:1px solid #5d4c20;color:#e4d39e;border-radius:10px;font-size:12px}
 .app{display:none;min-height:100vh}
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:245px;background:#0d0d0d;border-right:1px solid #252525;padding:18px 12px;z-index:10}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:245px;background:#0d0d0d;border-right:1px solid #252525;padding:18px 12px;z-index:10000;pointer-events:auto}
 .brand{display:flex;align-items:center;gap:10px;padding:4px 10px 18px;border-bottom:1px solid #202020;margin-bottom:14px}
 .brand img{width:44px;height:44px;border-radius:10px;object-fit:contain}.brandText{font-weight:900}.brandText span{color:#ddb84f}
 .nav{display:flex;flex-direction:column;gap:6px}.nav button{display:flex;align-items:center;gap:12px;width:100%;background:transparent;border:0;color:#ddd;padding:12px 13px;border-radius:10px;text-align:left;font-weight:800;cursor:pointer}
@@ -111,12 +111,12 @@ input:focus,textarea:focus{border-color:#d9b34e}
       <div class="brandText">TREX <span>TOP UP</span><div class="muted">ADMIN PANEL</div></div>
     </div>
     <nav class="nav">
-      <button class="active" data-section="orders" id="ordersNavBtn">📥 <span>Pesanan</span><span id="orderBadge" class="navBadge" hidden>0</span></button>
-      <button data-section="summary">📊 <span>Ringkasan</span></button>
-      <button data-section="finance">💰 <span>Keuangan</span></button>
-      <button data-section="activity">🧾 <span>Jejak Aktifitas</span></button>
-      <button data-section="payment">💳 <span>Metode Pembayaran</span></button>
-      <button data-section="passwordSection">🔐 <span>Ubah Password</span></button>
+      <button class="active" data-section="orders" id="ordersNavBtn" onclick="showSection('orders');return false;">📥 <span>Pesanan</span><span id="orderBadge" class="navBadge" hidden>0</span></button>
+      <button data-section="summary" onclick="showSection('summary');return false;">📊 <span>Ringkasan</span></button>
+      <button data-section="finance" onclick="showSection('finance');return false;">💰 <span>Keuangan</span></button>
+      <button data-section="activity" onclick="showSection('activity');return false;">🧾 <span>Jejak Aktifitas</span></button>
+      <button data-section="payment" onclick="showSection('payment');return false;">💳 <span>Metode Pembayaran</span></button>
+      <button data-section="passwordSection" onclick="showSection('passwordSection');return false;">🔐 <span>Ubah Password</span></button>
       <button class="exit" onclick="logout()">🚪 <span>Keluar</span></button>
     </nav>
   </aside>
@@ -536,13 +536,13 @@ function openRejectModal(i){
     input.value='';
     setTimeout(()=>input.focus(),50);
   }
-  if(modal)modal.style.display='flex';
+  if(modal){modal.style.display='flex';modal.style.pointerEvents='auto';}
 }
 
 function closeRejectModal(){
   rejectTargetIndex=null;
   const modal=document.getElementById('rejectReasonModal');
-  if(modal)modal.style.display='none';
+  if(modal){modal.style.display='none';modal.style.pointerEvents='none';}
 }
 
 async function confirmRejectOrder(){
@@ -554,7 +554,7 @@ async function confirmRejectOrder(){
   const reason=(input?.value||'').trim();
 
   if(!reason){
-    alert('Alasan penolakan wajib diisi.');
+    alert('Silakan berikan alasan.');
     input?.focus();
     return;
   }
@@ -733,31 +733,27 @@ function showSection(id){
   document.querySelectorAll('.nav button[data-section]').forEach(function(x){
     x.classList.toggle('active', x.getAttribute('data-section')===id);
   });
-
   document.querySelectorAll('.section').forEach(function(x){
     x.classList.remove('active');
   });
-
-  const target=document.getElementById(id);
+  var target=document.getElementById(id);
   if(target)target.classList.add('active');
 
-  const btn=document.querySelector('.nav button[data-section="'+id+'"]');
-  const span=btn?.querySelector('span');
-  if(span){
-    const title=document.getElementById('pageTitle');
-    if(title)title.textContent=span.textContent;
-  }
+  var btn=document.querySelector('.nav button[data-section="'+id+'"]');
+  var span=btn ? btn.querySelector('span') : null;
+  var title=document.getElementById('pageTitle');
+  if(span && title)title.textContent=span.textContent;
 
-  // Never block the click itself on a server request.
   setTimeout(function(){
-    if(id==='orders')loadOrders(false);
-    else if(id==='summary')loadSummary();
-    else if(id==='finance')loadFinance();
-    else if(id==='activity')loadActivities();
-    else if(id==='payment')loadPayments();
+    try{
+      if(id==='orders')loadOrders(false);
+      else if(id==='summary')loadSummary();
+      else if(id==='finance')loadFinance();
+      else if(id==='activity')loadActivities();
+      else if(id==='payment')loadPayments();
+    }catch(e){console.warn('Load '+id+' gagal',e);}
   },0);
-
-  return true;
+  return false;
 }
 
 function logout(){
@@ -782,7 +778,7 @@ boot();
 </script>
 
 
-<div id="rejectReasonModal" class="modalOverlay" style="display:none">
+<div id="rejectReasonModal" class="modalOverlay" style="display:none;pointer-events:none">
   <div class="modalBox">
     <div class="modalTitle">Tolak Pesanan</div>
     <div class="muted" style="margin-bottom:10px">Masukkan alasan penolakan untuk pesanan:</div>
