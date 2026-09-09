@@ -956,6 +956,29 @@ td.num{text-align:center}
 .publicHeroLogoCard img{width:min(290px,75%);max-height:260px;object-fit:contain;filter:drop-shadow(0 12px 24px rgba(0,0,0,.55))}
 .publicHeroLogoCard h2{margin:12px 0 4px;color:#ffd966;font-size:20px}
 .publicHeroLogoCard p{margin:0;color:#999;font-size:12px}
+
+/* ===== CUSTOMER TOP UP LOOKUP ===== */
+.customerTopupOverlay{position:fixed;inset:0;z-index:110;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.76);backdrop-filter:blur(6px)}
+.customerTopupOverlay.show{display:flex}
+.customerTopupBox{width:min(560px,96vw);max-height:92vh;overflow:auto;border:1px solid #6d510d;border-radius:18px;background:linear-gradient(180deg,#161616,#080808);box-shadow:0 30px 90px rgba(0,0,0,.72);padding:22px}
+.customerTopupHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.customerTopupHead h2{margin:0;color:#ffd966;font-size:22px}
+.customerTopupClose{width:38px;height:38px;border-radius:10px;border:1px solid #444;background:#111;color:#fff;font-size:20px;cursor:pointer}
+.customerTopupGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.customerTopupLabel{display:block;color:#bbb;font-size:13px;font-weight:700;margin:0 0 6px}
+.customerTopupInput{width:100%;min-height:46px;padding:12px 13px;background:#171717;color:#fff;border:1px solid #383838;border-radius:9px;outline:none}
+.customerTopupInput:focus{border-color:rgba(245,197,66,.75);box-shadow:0 0 0 3px rgba(245,197,66,.08)}
+.customerTopupResult{margin-top:13px;padding:13px;border-radius:10px;border:1px solid #333;background:#111}
+.customerTopupResult.loading{color:#c9c9c9}
+.customerTopupResult.ok{border-color:rgba(66,209,122,.32);background:rgba(66,209,122,.06)}
+.customerTopupResult.warn{border-color:rgba(245,197,66,.28);background:rgba(245,197,66,.045)}
+.customerTopupResult.err{border-color:rgba(227,91,91,.35);background:rgba(227,91,91,.06)}
+.customerTopupName{font-size:20px;font-weight:900;color:#ffd966;margin-top:4px;word-break:break-word}
+.customerTopupSub{color:#8f969d;font-size:11px;margin-top:4px}
+.customerTopupNote{margin-top:14px;padding:12px 13px;border:1px solid rgba(245,197,66,.16);border-radius:10px;color:#bfc4c8;background:rgba(245,197,66,.025);font-size:12px;line-height:1.6}
+.customerTopupActions{display:flex;justify-content:flex-end;gap:9px;margin-top:16px}
+@media(max-width:620px){.customerTopupGrid{grid-template-columns:1fr}.customerTopupBox{padding:17px}}
+
 .publicComingSoon{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.72);backdrop-filter:blur(5px);padding:20px}
 .publicComingSoon.show{display:flex}
 .comingSoonBox{width:min(390px,92vw);padding:30px;border:1px solid #6d510d;border-radius:18px;background:linear-gradient(180deg,#161616,#080808);box-shadow:0 30px 90px rgba(0,0,0,.7);text-align:center}
@@ -1075,6 +1098,7 @@ td.num{text-align:center}
       <h1 class="publicHeroTitle">TREX TOP UP<br><span>COIN MICO</span></h1>
       <div class="publicHeroText">TREX TOP UP (TREXTOPUP) menyediakan layanan Top Up Coin MICO dengan proses cepat, aman, dan responsif 24 jam.</div>
       <div class="heroActions">
+        <button class="publicBtn" type="button" onclick="openCustomerTopup()">TOP UP SEKARANG</button>
         <button class="publicBtn" type="button" onclick="enterLogin()">LOGIN SEKARANG</button>
         <a class="publicBtn dark" href="https://wa.me/6285921000299" target="_blank" rel="noopener">CONTACT US</a>
       </div>
@@ -1145,6 +1169,29 @@ td.num{text-align:center}
     <span><b style="color:#ffd966">TREX TOP UP</b> • Fast Response 24 JAM</span>
     <span>© 2026 TREX TOP UP. All Rights Reserved.</span>
   </footer>
+</div>
+
+
+<div id="customerTopupOverlay" class="customerTopupOverlay" onclick="closeCustomerTopup(event)">
+  <div class="customerTopupBox" onclick="event.stopPropagation()">
+    <div class="customerTopupHead">
+      <h2>Top Up Coin MICO</h2>
+      <button class="customerTopupClose" type="button" onclick="closeCustomerTopup()">×</button>
+    </div>
+    <div class="customerTopupGrid">
+      <div>
+        <label class="customerTopupLabel" for="customerMicoId">ID MICO *</label>
+        <input id="customerMicoId" class="customerTopupInput" type="text" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="Masukkan ID MICO">
+      </div>
+      <div>
+        <label class="customerTopupLabel" for="customerWhatsapp">No. WhatsApp *</label>
+        <input id="customerWhatsapp" class="customerTopupInput" type="text" inputmode="numeric" autocomplete="tel" maxlength="15" placeholder="Masukkan nomor WhatsApp">
+      </div>
+    </div>
+    <div id="customerMicoResult" class="customerTopupResult warn">Masukkan ID MICO untuk mencari username.</div>
+    <div class="customerTopupNote">Username diambil langsung dari sheet <strong>Data base user</strong>. Bila satu ID mempunyai beberapa data, sistem menggunakan data dengan <strong>UPDATED AT</strong> paling baru.</div>
+    <div class="customerTopupActions"><button class="btn" type="button" onclick="closeCustomerTopup()">Tutup</button></div>
+  </div>
 </div>
 
 <div id="publicComingSoon" class="publicComingSoon" onclick="closeComingSoon(event)">
@@ -1286,6 +1333,88 @@ function normalizeError(e){return e&&e.message?e.message:String(e||'Terjadi kesa
 /* ============================================================
    PUBLIC HOME — tambahan saja
    ============================================================ */
+
+/* ============================================================
+   CUSTOMER TOP UP — ID MICO -> USERNAME
+   Hanya lookup database user. Fitur lama tidak diubah.
+   ============================================================ */
+let customerMicoLookupTimer=null;
+let customerMicoLookupSeq=0;
+
+function openCustomerTopup(){
+  const overlay=document.getElementById('customerTopupOverlay');
+  if(!overlay)return;
+  overlay.classList.add('show');
+  const idEl=document.getElementById('customerMicoId');
+  const result=document.getElementById('customerMicoResult');
+  if(idEl){idEl.value='';setTimeout(function(){idEl.focus()},60)}
+  if(result){result.className='customerTopupResult warn';result.textContent='Masukkan ID MICO untuk mencari username.'}
+}
+function closeCustomerTopup(e){
+  if(e&&e.target!==e.currentTarget)return;
+  document.getElementById('customerTopupOverlay')?.classList.remove('show');
+}
+function lookupCustomerMico(){
+  const input=document.getElementById('customerMicoId');
+  const result=document.getElementById('customerMicoResult');
+  if(!input||!result)return;
+  const id=String(input.value||'').replace(/\D/g,'');
+  input.value=id;
+  clearTimeout(customerMicoLookupTimer);
+  const seq=++customerMicoLookupSeq;
+  if(!id){
+    result.className='customerTopupResult warn';
+    result.textContent='Masukkan ID MICO untuk mencari username.';
+    return;
+  }
+  if(id.length<5){
+    result.className='customerTopupResult warn';
+    result.textContent='Masukkan ID MICO yang lengkap.';
+    return;
+  }
+  result.className='customerTopupResult loading';
+  result.textContent='Mencari username...';
+  customerMicoLookupTimer=setTimeout(async function(){
+    try{
+      const response=await fetch(GAS_WEB_APP_URL,{
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({
+          action:'getMicoUser',
+          args:[id]
+        })
+      });
+      const raw=await response.text();
+      let payload;
+      try{ payload=JSON.parse(raw); }
+      catch(_){ throw new Error(raw||('HTTP '+response.status)); }
+
+      if(!response.ok || !payload.success){
+        throw new Error(payload?.message||payload?.error||('HTTP '+response.status));
+      }
+
+      if(seq!==customerMicoLookupSeq)return;
+
+      const data=payload.result||{};
+      if(data.found){
+        result.className='customerTopupResult ok';
+        result.innerHTML='<div style="color:#9ea4aa;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px">Username ditemukan</div>'+
+          '<div class="customerTopupName">'+esc(data.username||'-')+'</div>'+
+          '<div class="customerTopupSub">ID MICO: '+esc(data.id||id)+'</div>';
+      }else{
+        result.className='customerTopupResult warn';
+        result.innerHTML='<div style="color:#f0d982;font-weight:800">ID MICO belum ada di database.</div>'+
+          '<div class="customerTopupSub">Username tidak ditampilkan. Silakan pastikan kembali ID Anda.</div>';
+      }
+    }catch(e){
+      if(seq!==customerMicoLookupSeq)return;
+      result.className='customerTopupResult err';
+      result.textContent='Gagal mengambil data username. '+normalizeError(e);
+    }
+  },450);
+}
+
+
 function enterLogin(){
   const home=document.getElementById('publicHome');
   const login=document.getElementById('loginPage');
@@ -2964,6 +3093,22 @@ function exportCSV(id){
  a.download=id+'.csv';a.click();URL.revokeObjectURL(a.href);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('loginPage')&&!document.getElementById('loginPage').classList.contains('hidden'))doLogin()});
+
+(function initCustomerMicoLookup(){
+  const idEl=document.getElementById('customerMicoId');
+  const waEl=document.getElementById('customerWhatsapp');
+  if(idEl){
+    idEl.addEventListener('input',function(){
+      this.value=this.value.replace(/\D/g,'');
+      lookupCustomerMico();
+    });
+    idEl.addEventListener('blur',lookupCustomerMico);
+  }
+  if(waEl){
+    waEl.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
+  }
+})();
+
 boot();
 </script>
 
