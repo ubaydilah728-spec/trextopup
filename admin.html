@@ -75,6 +75,17 @@ input:focus,textarea:focus{border-color:#d9b34e}
 @media(max-width:1000px){.sidebar{width:210px}.main{margin-left:210px}.cards{grid-template-columns:repeat(2,1fr)}.payGrid{grid-template-columns:1fr}}
 @media(max-width:700px){.sidebar{position:static;width:auto;min-height:auto}.main{margin-left:0}.app{display:block}.cards{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}}
 </style>
+
+<style>
+.modalOverlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:18px}
+.modalBox{width:min(500px,94vw);background:#111;border:1px solid #765a16;border-radius:16px;padding:20px;box-shadow:0 20px 70px rgba(0,0,0,.65)}
+.modalTitle{font-size:21px;font-weight:900;color:#ffd966;margin-bottom:5px}
+.modalOrderLabel{padding:10px 12px;border:1px solid #333;border-radius:9px;background:#0b0b0b;color:#ffd966;font-weight:800;margin-bottom:10px}
+.modalBox textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:100px;background:#0c0c0c;color:#fff;border:1px solid #333;border-radius:9px;padding:12px;font:inherit}
+.modalBox textarea:focus{outline:none;border-color:#c69a1a}
+.modalActions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;flex-wrap:wrap}
+</style>
+
 </head>
 <body>
 
@@ -464,7 +475,7 @@ function renderOrder(o,isKnown){
       <div id="verifyResult-${i}" class="verifyResult">Masukkan nominal diterima untuk menentukan status pembayaran.</div>
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         <button id="verifyBtn-${i}" class="btn btnPrimary" disabled onclick="verifyPayment(${i})">Verifikasi Pembayaran</button>
-        <button class="btn btnDanger" onclick="rejectPayment(${i})">Tolak</button>
+        <button class="btn btnDanger" onclick="openRejectModal(${i})">Tolak</button>
       </div>
     </div>`;
   }else if(status==='PEMBAYARAN DITERIMA'){
@@ -512,13 +523,80 @@ async function verifyPayment(i){
   catch(e){ alert(e.message||String(e)); }
 }
 
-async function rejectPayment(i){
+let rejectTargetIndex=null;
+
+function openRejectModal(i){
+  rejectTargetIndex=i;
   const o=orders[i];
-  const reason=prompt('Masukkan alasan pembayaran ditolak:\n\nContoh:\n- Transfer kurang\n- Nominal tidak sesuai\n- Bukti pembayaran tidak valid');
-  if(reason===null)return;
-  if(!reason.trim()){ alert('Alasan penolakan wajib diisi.'); return; }
-  try{ await callServer('rejectTopupOrder',[o.orderNo,reason.trim(),adminSession.token]); await loadOrders(false); showSection('summary'); }
-  catch(e){ alert(e.message||String(e)); }
+  const modal=document.getElementById('rejectReasonModal');
+  const label=document.getElementById('rejectOrderLabel');
+  const input=document.getElementById('rejectReasonInput');
+  if(label)label.textContent=(o?.orderNo||'-');
+  if(input){
+    input.value='';
+    setTimeout(()=>input.focus(),50);
+  }
+  if(modal)modal.style.display='flex';
+}
+
+function closeRejectModal(){
+  rejectTargetIndex=null;
+  const modal=document.getElementById('rejectReasonModal');
+  if(modal)modal.style.display='none';
+}
+
+async function confirmRejectOrder(){
+  if(rejectTargetIndex===null)return;
+
+  const i=rejectTargetIndex;
+  const o=orders[i];
+  const input=document.getElementById('rejectReasonInput');
+  const reason=(input?.value||'').trim();
+
+  if(!reason){
+    alert('Alasan penolakan wajib diisi.');
+    input?.focus();
+    return;
+  }
+
+  const btn=document.querySelector('#rejectReasonModal .btnDanger');
+  if(btn){
+    btn.disabled=true;
+    btn.textContent='Menyimpan...';
+  }
+
+  try{
+    const result=await callServer('rejectTopupOrder',[o.orderNo,reason,adminSession.token]);
+
+    if(!result || result.status!=='DITOLAK'){
+      throw new Error('Server tidak mengonfirmasi status DITOLAK.');
+    }
+
+    // Verify the saved status from the backend before moving the order.
+    const check=await callServer('getTopupSummary',[adminSession.token,{
+      status:'DITOLAK',
+      orderNo:o.orderNo,
+      idMico:''
+    }])||[];
+
+    const saved=check.find(x=>x.orderNo===o.orderNo);
+    if(!saved || saved.status!=='DITOLAK'){
+      throw new Error('Penolakan belum tersimpan di database. Pesanan tetap berada di Pesanan.');
+    }
+
+    closeRejectModal();
+    await loadOrders(false);
+    await renderSummary();
+
+    // Open Ringkasan only after the backend confirms DITOLAK.
+    showSection('summary');
+  }catch(e){
+    if(btn){
+      btn.disabled=false;
+      btn.textContent='Tolak Pesanan';
+    }
+    alert(e.message||String(e));
+  }
 }
 
 async function processOrder(i){
@@ -541,27 +619,50 @@ function viewProof(i){
 }
 
 async function loadSummary(){
-  try{
-    const data=await callServer('getTopupSummary',[adminSession?.token,{status:'SEMUA',orderNo:'',idMico:''}])||[];
-    const successful=data.filter(x=>x.status==='BERHASIL');
-    const customers=new Set(successful.map(x=>x.idMico).filter(Boolean));
-    document.getElementById('sumCount').textContent=fmt(successful.length);
-    document.getElementById('sumCustomers').textContent=fmt(customers.size);
-    document.getElementById('sumGold').textContent=fmt(successful.reduce((s,x)=>s+Number(x.gold||0),0));
-    document.getElementById('sumMoney').textContent=rp(successful.reduce((s,x)=>s+Number(x.nominal||0),0));
-    renderSummary();
-  }catch(e){}
-}
+  const status=document.getElementById('summaryStatus')?.value||'SEMUA';
+  const orderNo=document.getElementById('summarySearchOrder')?.value.trim()||'';
+  const idMico=document.getElementById('summarySearchMico')?.value.replace(/\D/g,'')||'';
 
-async function renderSummary(){
-  const status=(document.getElementById('summaryStatus')?.value||'SEMUA').toUpperCase();
-  const orderNo=(document.getElementById('summarySearchOrder')?.value||'').trim().toUpperCase();
-  const idMico=(document.getElementById('summarySearchMico')?.value||'').replace(/\D/g,'');
   try{
-    let rows=await callServer('getTopupSummary',[adminSession.token,{status:status,orderNo:orderNo,idMico:idMico}])||[];
-    document.getElementById('summaryFilterInfo').textContent=fmt(rows.length)+' transaksi ditemukan';
-    document.getElementById('summaryRows').innerHTML=rows.length?rows.map(o=>`<tr><td>${esc(o.orderNo)}</td><td>${esc(o.idMico)}</td><td>${fmt(o.gold)}</td><td>${rp(o.nominal)}</td><td>${esc(o.paymentMethod)}</td><td>${statusHtml(o.status)}</td><td>${esc(o.alasanDitolak||'-')}</td></tr>`).join(''):'<tr><td colspan="7" class="muted">Tidak ada transaksi.</td></tr>';
-  }catch(e){ document.getElementById('summaryRows').innerHTML='<tr><td colspan="7" class="muted">'+esc(e.message||String(e))+'</td></tr>'; }
+    const rows=await callServer('getTopupSummary',[adminSession.token,{
+      status:status,orderNo:orderNo,idMico:idMico
+    }])||[];
+
+    const finance=await callServer('getTopupFinance',[adminSession.token])||{};
+    const count=Number(finance.jumlahTransaksi||0);
+    const customers=Number(finance.jumlahCustomer||0);
+    const gold=Number(finance.jumlahCoinKeluar||0);
+    const money=Number(finance.jumlahUangMasuk||0);
+
+    document.getElementById('sumCount').textContent=fmt(count);
+    document.getElementById('sumCustomers').textContent=fmt(customers);
+    document.getElementById('sumGold').textContent=fmt(gold);
+    document.getElementById('sumMoney').textContent=rp(money);
+
+    const active=[];
+    if(status!=='SEMUA')active.push('Status: '+status);
+    if(orderNo)active.push('Order: '+orderNo);
+    if(idMico)active.push('ID MICO: '+idMico);
+
+    document.getElementById('summaryFilterInfo').textContent=
+      `${rows.length} transaksi ditemukan${active.length?' • '+active.join(' • '):''}`;
+
+    document.getElementById('summaryRows').innerHTML=rows.length
+      ? rows.map(x=>`
+        <tr>
+          <td>${esc(x.orderNo||'-')}</td>
+          <td>${esc(x.idMico||'-')}</td>
+          <td>${fmt(x.gold)} Gold</td>
+          <td>${rp(x.nominal)}</td>
+          <td>${esc(x.paymentMethod||'-')}</td>
+          <td>${statusHtml(x.status)}</td>
+          <td>${esc(x.alasanDitolak||'-')}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="7" class="muted">Tidak ada transaksi yang sesuai filter.</td></tr>';
+  }catch(e){
+    document.getElementById('summaryRows').innerHTML=
+      '<tr><td colspan="7" class="muted">'+esc(e.message||String(e))+'</td></tr>';
+  }
 }
 
 function resetSummaryFilters(){
@@ -676,6 +777,20 @@ document.querySelectorAll('.nav button[data-section]').forEach(function(btn){
 
 boot();
 </script>
+
+
+<div id="rejectReasonModal" class="modalOverlay" style="display:none">
+  <div class="modalBox">
+    <div class="modalTitle">Tolak Pesanan</div>
+    <div class="muted" style="margin-bottom:10px">Masukkan alasan penolakan untuk pesanan:</div>
+    <div id="rejectOrderLabel" class="modalOrderLabel">-</div>
+    <textarea id="rejectReasonInput" rows="4" placeholder="Contoh: transfer kurang, nominal tidak sesuai, atau bukti pembayaran tidak valid."></textarea>
+    <div class="modalActions">
+      <button class="btn btnSecondary" type="button" onclick="closeRejectModal()">Batal</button>
+      <button class="btn btnDanger" type="button" onclick="confirmRejectOrder()">Tolak Pesanan</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
