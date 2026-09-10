@@ -461,6 +461,43 @@ async function loadOrders(initial=false){
   }
 }
 
+function renderOrders(){
+  const list=document.getElementById('orderList');
+  if(!list)return;
+
+  const pending=orders.filter(o=>[
+    'BARU',
+    'MENUNGGU VERIFIKASI',
+    'PEMBAYARAN DITERIMA',
+    'PROSES TOP UP'
+  ].includes(String(o.status||'').toUpperCase()));
+
+  const waiting=pending.filter(o=>[
+    'BARU',
+    'MENUNGGU VERIFIKASI'
+  ].includes(String(o.status||'').toUpperCase()));
+
+  const pendingEl=document.getElementById('mPending');
+  const waitingEl=document.querySelector('#orders .metric:nth-child(2) .value');
+  const goldEl=document.querySelector('#orders .metric:nth-child(3) .value');
+  const moneyEl=document.querySelector('#orders .metric:nth-child(4) .value');
+
+  if(pendingEl)pendingEl.textContent=fmt(pending.length);
+  if(waitingEl)waitingEl.textContent=fmt(waiting.length);
+  if(goldEl)goldEl.textContent=fmt(
+    pending.reduce((s,o)=>s+Number(o.gold||0),0)
+  );
+  if(moneyEl)moneyEl.textContent=rp(
+    pending.reduce((s,o)=>s+Number(o.nominal||0),0)
+  );
+
+  updateBrowserNotification(waiting.length);
+
+  list.innerHTML=pending.length
+    ? pending.map(o=>renderOrder(o,true)).join('')
+    : '<div class="muted">Tidak ada pesanan yang menunggu proses.</div>';
+}
+
 function renderOrder(o,isKnown){
   const i=orders.indexOf(o);
   const status=String(o.status||'').toUpperCase();
