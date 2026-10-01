@@ -2594,7 +2594,7 @@ function sendResellerReport(r,btn){
         'Terima kasih.'
       ].join('\n');
 
-      const url='https://wa.me/'+wa+'?text='+encodeWhatsAppUtf8(msg);
+      const encodedText=encodeURIComponent(msg); const isMobile=/Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);  const url=isMobile   ? 'https://wa.me/'+wa+'?text='+encodedText   : 'https://web.whatsapp.com/send?phone='+wa+'&text='+encodedText;
 
       try{
         waWindow.location.href=url;
